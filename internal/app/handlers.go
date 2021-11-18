@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -45,7 +46,7 @@ func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
-	_, err = w.Write([]byte(key))
+	_, err = w.Write([]byte(fmt.Sprintf("http://localhost:8080/%s", key)))
 	if err != nil {
 		log.Printf("Write failed: %v", err)
 	}
