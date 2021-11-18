@@ -32,6 +32,12 @@ func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not a valid url", http.StatusBadRequest)
 		return
 	}
+
+	if !u.IsAbs() {
+		http.Error(w, "Only absolute urls allowed", http.StatusBadRequest)
+		return
+	}
+
 	key, err := urlStorage.Store(u.String())
 	if err != nil {
 		http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
