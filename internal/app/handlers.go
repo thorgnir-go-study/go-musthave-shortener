@@ -60,6 +60,10 @@ func getURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pathSegments := strings.Split(path, "/")
+	if len(pathSegments) > 1 {
+		http.NotFound(w, r)
+		return
+	}
 
 	urlID := pathSegments[0]
 
