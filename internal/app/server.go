@@ -9,7 +9,7 @@ func registerHandlers() {
 	http.HandleFunc("/", rootHandler)
 }
 
-func StartUrlShortenerServer(port uint16, storage UrlStorage) {
+func StartURLShortenerServer(port uint16, storage URLStorage) {
 	urlStorage = storage
 	registerHandlers()
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)

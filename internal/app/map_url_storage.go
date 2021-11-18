@@ -7,22 +7,22 @@ import (
 	"time"
 )
 
-type mapUrlStorage struct {
+type mapURLStorage struct {
 	mx       sync.RWMutex
 	m        map[string]string
 	keysRand *rand.Rand
 }
 
-func CreateMapUrlStorage() *mapUrlStorage {
+func CreateMapURLStorage() *mapURLStorage {
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
-	return &mapUrlStorage{
+	return &mapURLStorage{
 		m:        make(map[string]string),
 		keysRand: r,
 	}
 }
 
-func (s *mapUrlStorage) Store(url string) (key string, err error) {
+func (s *mapURLStorage) Store(url string) (key string, err error) {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 	var id string
@@ -34,7 +34,7 @@ func (s *mapUrlStorage) Store(url string) (key string, err error) {
 	return id, nil
 }
 
-func (s *mapUrlStorage) Load(key string) (url string, found bool, err error) {
+func (s *mapURLStorage) Load(key string) (url string, found bool, err error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 	value, ok := s.m[key]

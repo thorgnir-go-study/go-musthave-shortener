@@ -8,20 +8,20 @@ import (
 	"strings"
 )
 
-var urlStorage UrlStorage
+var urlStorage URLStorage
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		getUrlHandler(w, r)
+		getURLHandler(w, r)
 	case http.MethodPost:
-		shortenUrlHandler(w, r)
+		shortenURLHandler(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
-func shortenUrlHandler(w http.ResponseWriter, r *http.Request) {
+func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	bodyContent, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Could not read request body", http.StatusInternalServerError)
@@ -45,7 +45,7 @@ func shortenUrlHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getUrlHandler(w http.ResponseWriter, r *http.Request) {
+func getURLHandler(w http.ResponseWriter, r *http.Request) {
 	path := strings.Trim(r.URL.Path, "/")
 
 	if len(path) == 0 {
@@ -59,9 +59,9 @@ func getUrlHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urlId := pathSegments[0]
+	urlID := pathSegments[0]
 
-	u, found, err := urlStorage.Load(urlId)
+	u, found, err := urlStorage.Load(urlID)
 	if err != nil {
 		http.Error(w, "Could not read from url storage", http.StatusInternalServerError)
 		return
