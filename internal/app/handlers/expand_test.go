@@ -75,6 +75,8 @@ func Test_ExpandURLHandler(t *testing.T) {
 			defer ts.Close()
 
 			res := testRequest(t, ts, tt.request.method, tt.request.url, "")
+			// statictest иначе ругается
+			defer res.Body.Close()
 
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusTemporaryRedirect {
