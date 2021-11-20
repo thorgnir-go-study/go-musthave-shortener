@@ -3,10 +3,10 @@ package handlers
 import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -24,8 +24,10 @@ func (m *URLStorageMock) Load(key string) (string, bool, error) {
 	return args.String(0), args.Bool(1), args.Error(2)
 }
 
-func testRequest(t *testing.T, ts *httptest.Server, method, path string, body io.Reader) (*http.Response, string) {
-	req, err := http.NewRequest(method, ts.URL+path, body)
+func testRequest(t *testing.T, ts *httptest.Server, method, path string, body string) (*http.Response, string) {
+	bodyReader := strings.NewReader(body)
+
+	req, err := http.NewRequest(method, ts.URL+path, bodyReader)
 	require.NoError(t, err)
 
 	client := &http.Client{

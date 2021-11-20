@@ -4,7 +4,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
@@ -78,8 +77,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 			r := NewRouter(urlStorage)
 			ts := httptest.NewServer(r)
 			defer ts.Close()
-
-			res, body := testRequest(t, ts, tt.request.method, tt.request.url, strings.NewReader(tt.request.body))
+			res, body := testRequest(t, ts, tt.request.method, tt.request.url, tt.request.body)
 
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusCreated {

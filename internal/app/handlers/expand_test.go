@@ -74,7 +74,8 @@ func Test_ExpandURLHandler(t *testing.T) {
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 
-			res, _ := testRequest(t, ts, tt.request.method, tt.request.url, nil)
+			res, _ := testRequest(t, ts, tt.request.method, tt.request.url, "")
+
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusTemporaryRedirect {
 				assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
