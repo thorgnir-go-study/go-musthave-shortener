@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -77,12 +79,15 @@ func Test_ShortenURLHandler(t *testing.T) {
 			r := NewRouter(urlStorage)
 			ts := httptest.NewServer(r)
 			defer ts.Close()
-			res, body := testRequest(t, ts, tt.request.method, tt.request.url, tt.request.body)
+			res := testRequest(t, ts, tt.request.method, tt.request.url, tt.request.body)
 
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusCreated {
 				assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
-				assert.Equal(t, tt.want.body, body)
+				defer res.Body.Close()
+				body, err := io.ReadAll(res.Body)
+				require.NoError(t, err)
+				assert.Equal(t, tt.want.body, string(body))
 			}
 		})
 	}
