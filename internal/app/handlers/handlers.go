@@ -16,7 +16,7 @@ func RootHanlder(storage storage.URLStorage) http.HandlerFunc {
 		case http.MethodPost:
 			shortenURLHandler(storage)(w, r)
 		case http.MethodGet:
-			getURLHandler(storage)(w, r)
+			expandURLHandler(storage)(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -56,7 +56,7 @@ func shortenURLHandler(storage storage.URLStorage) http.HandlerFunc {
 	}
 }
 
-func getURLHandler(storage storage.URLStorage) http.HandlerFunc {
+func expandURLHandler(storage storage.URLStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.Trim(r.URL.Path, "/")
 

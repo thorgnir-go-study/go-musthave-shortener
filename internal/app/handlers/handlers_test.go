@@ -4,7 +4,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -26,11 +25,7 @@ func (m *URLStorageMock) Load(key string) (string, bool, error) {
 	return args.String(0), args.Bool(1), args.Error(2)
 }
 
-type HandlersTestSuite struct {
-	suite.Suite
-}
-
-func (suite *HandlersTestSuite) TestShortenHandler() {
+func Test_shortenURLHandler(t *testing.T) {
 	type request struct {
 		url    string
 		method string
@@ -96,10 +91,10 @@ func (suite *HandlersTestSuite) TestShortenHandler() {
 	urlStorage := new(URLStorageMock)
 	urlStorage.On("Store", "http://google.com").Return("shortGoogle", nil).Once()
 	for _, tt := range tests {
-		suite.T().Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.request.method, tt.request.url, strings.NewReader(tt.request.body))
 			w := httptest.NewRecorder()
-			h := shortenURLHandler(urlStorage)
+			h := RootHanlder(urlStorage)
 
 			h.ServeHTTP(w, request)
 
@@ -116,9 +111,87 @@ func (suite *HandlersTestSuite) TestShortenHandler() {
 		})
 	}
 
-	urlStorage.AssertExpectations(suite.T())
+	urlStorage.AssertExpectations(t)
 }
 
-func TestHandlersTestSuite(t *testing.T) {
-	suite.Run(t, new(HandlersTestSuite))
+func Test_expandURLHandler(t *testing.T) {
+	type request struct {
+		url    string
+		method string
+	}
+	type want struct {
+		contentType    string
+		statusCode     int
+		locationHeader string
+	}
+	tests := []struct {
+		name    string
+		request request
+		want    want
+	}{
+		{
+			name: "should unshorten google",
+			request: request{
+				url:    "/shortGoogle",
+				method: http.MethodGet,
+			},
+			want: want{
+				contentType:    "text/plain; charset=utf-8",
+				statusCode:     http.StatusTemporaryRedirect,
+				locationHeader: "http://google.com",
+			},
+		},
+		{
+			name: "should fail on empty req",
+			request: request{
+				url:    "/",
+				method: http.MethodGet,
+			},
+			want: want{
+				statusCode: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "should respond 404 on deep urls",
+			request: request{
+				url:    "/blabla/blabla",
+				method: http.MethodGet,
+			},
+			want: want{
+				statusCode: http.StatusNotFound,
+			},
+		},
+		{
+			name: "should respond 404 on unknown id",
+			request: request{
+				url:    "/nonexistentId",
+				method: http.MethodGet,
+			},
+			want: want{
+				statusCode: http.StatusNotFound,
+			},
+		},
+	}
+	urlStorage := new(URLStorageMock)
+	urlStorage.On("Load", "shortGoogle").Return("http://google.com", true, nil).Once()
+	urlStorage.On("Load", "nonexistentId").Return("", false, nil).Once()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(tt.request.method, tt.request.url, nil)
+			w := httptest.NewRecorder()
+			h := RootHanlder(urlStorage)
+
+			h.ServeHTTP(w, request)
+
+			res := w.Result()
+
+			assert.Equal(t, tt.want.statusCode, res.StatusCode)
+			if res.StatusCode == http.StatusTemporaryRedirect {
+				assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
+				assert.Equal(t, tt.want.locationHeader, res.Header.Get("Location"))
+			}
+		})
+	}
+
+	urlStorage.AssertExpectations(t)
 }
