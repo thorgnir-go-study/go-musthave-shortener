@@ -1,8 +1,11 @@
 package main
 
-import "github.com/thorgnir-go-study/go-musthave-shortener/internal/app"
+import (
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
+)
 
 func main() {
-	storage := app.CreateMapURLStorage()
-	app.StartURLShortenerServer(8080, storage)
+	urlStorage := storage.CreateMapURLStorage()
+	app.StartURLShortenerServer(8080, urlStorage)
 }

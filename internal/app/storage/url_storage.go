@@ -1,4 +1,4 @@
-package app
+package storage
 
 type URLStorage interface {
 	Store(string) (string, error)
