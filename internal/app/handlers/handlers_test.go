@@ -12,16 +12,16 @@ import (
 	"testing"
 )
 
-type UrlStorageMock struct {
+type URLStorageMock struct {
 	mock.Mock
 }
 
-func (m *UrlStorageMock) Store(url string) (string, error) {
+func (m *URLStorageMock) Store(url string) (string, error) {
 	args := m.Called(url)
 	return args.String(0), args.Error(1)
 }
 
-func (m *UrlStorageMock) Load(key string) (string, bool, error) {
+func (m *URLStorageMock) Load(key string) (string, bool, error) {
 	args := m.Called(key)
 	return args.String(0), args.Bool(1), args.Error(2)
 }
@@ -93,7 +93,7 @@ func (suite *HandlersTestSuite) TestShortenHandler() {
 			},
 		},
 	}
-	urlStorage := new(UrlStorageMock)
+	urlStorage := new(URLStorageMock)
 	urlStorage.On("Store", "http://google.com").Return("shortGoogle", nil).Once()
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
