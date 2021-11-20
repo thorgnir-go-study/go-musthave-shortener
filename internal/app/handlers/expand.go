@@ -1,28 +1,14 @@
 package handlers
 
 import (
+	"github.com/go-chi/chi/v5"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"net/http"
-	"strings"
 )
 
 func ExpandURLHandler(storage storage.URLStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		path := strings.Trim(r.URL.Path, "/")
-
-		if len(path) == 0 {
-			http.Error(w, "URL id missing", http.StatusBadRequest)
-			return
-		}
-
-		pathSegments := strings.Split(path, "/")
-		if len(pathSegments) > 1 {
-			http.NotFound(w, r)
-			return
-		}
-
-		urlID := pathSegments[0]
-
+		urlID := chi.URLParam(r, "urlID")
 		u, found, err := storage.Load(urlID)
 		if err != nil {
 			http.Error(w, "Could not read from url storage", http.StatusInternalServerError)
@@ -35,7 +21,5 @@ func ExpandURLHandler(storage storage.URLStorage) http.HandlerFunc {
 		} else {
 			http.NotFound(w, r)
 		}
-
 	}
-
 }

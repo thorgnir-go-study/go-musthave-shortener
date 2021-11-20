@@ -41,7 +41,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 				method: http.MethodGet,
 			},
 			want: want{
-				statusCode: http.StatusBadRequest,
+				statusCode: http.StatusMethodNotAllowed,
 			},
 		},
 		{
@@ -70,13 +70,11 @@ func Test_ExpandURLHandler(t *testing.T) {
 	urlStorage.On("Load", "nonexistentId").Return("", false, nil).Once()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(tt.request.method, tt.request.url, nil)
-			w := httptest.NewRecorder()
-			h := ExpandURLHandler(urlStorage)
+			r := NewRouter(urlStorage)
+			ts := httptest.NewServer(r)
+			defer ts.Close()
 
-			h.ServeHTTP(w, request)
-			res := w.Result()
-
+			res, _ := testRequest(t, ts, tt.request.method, tt.request.url, nil)
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusTemporaryRedirect {
 				assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))

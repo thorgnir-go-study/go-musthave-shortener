@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -77,21 +75,16 @@ func Test_ShortenURLHandler(t *testing.T) {
 	urlStorage.On("Store", "http://google.com").Return("shortGoogle", nil).Once()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(tt.request.method, tt.request.url, strings.NewReader(tt.request.body))
-			w := httptest.NewRecorder()
-			h := ShortenURLHandler(urlStorage)
+			r := NewRouter(urlStorage)
+			ts := httptest.NewServer(r)
+			defer ts.Close()
 
-			h.ServeHTTP(w, request)
-
-			res := w.Result()
+			res, body := testRequest(t, ts, tt.request.method, tt.request.url, strings.NewReader(tt.request.body))
 
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusCreated {
 				assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
-				defer res.Body.Close()
-				resBody, err := io.ReadAll(res.Body)
-				require.NoError(t, err)
-				assert.Equal(t, tt.want.body, string(resBody))
+				assert.Equal(t, tt.want.body, body)
 			}
 		})
 	}
