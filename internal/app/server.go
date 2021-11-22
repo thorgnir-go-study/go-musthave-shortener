@@ -1,17 +1,14 @@
 package app
 
 import (
-	"fmt"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/handlers"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
+	"log"
 	"net/http"
 )
 
-func StartURLShortenerServer(port uint16, storage storage.URLStorage) {
+//StartURLShortenerServer старт нового сервера сокращения ссылок
+func StartURLShortenerServer(domain string, storage storage.URLStorage) {
 	r := handlers.NewRouter(storage)
-
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), r)
-	if err != nil {
-		panic(err)
-	}
+	log.Fatal(http.ListenAndServe(domain, r))
 }

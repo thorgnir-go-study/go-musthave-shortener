@@ -7,5 +7,5 @@ import (
 
 func main() {
 	urlStorage := storage.CreateMapURLStorage()
-	app.StartURLShortenerServer(8080, urlStorage)
+	app.StartURLShortenerServer(":8080", urlStorage)
 }

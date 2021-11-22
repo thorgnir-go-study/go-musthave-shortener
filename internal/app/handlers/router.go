@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+//NewRouter возращает настроенный для сокращения ссылок chi.Router
 func NewRouter(storage storage.URLStorage) chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
