@@ -9,9 +9,11 @@ import (
 	"net/url"
 )
 
-func ShortenURLHandler(storage storage.URLStorage) http.HandlerFunc {
+//ShortenURLHandler обрабатывает запросы на развертывание сокращенных ссылок
+func ShortenURLHandler(s storage.URLStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
+		defer r.Body.Close()
 		if err != nil {
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)
 			return
@@ -27,7 +29,7 @@ func ShortenURLHandler(storage storage.URLStorage) http.HandlerFunc {
 			return
 		}
 
-		key, err := storage.Store(u.String())
+		key, err := s.Store(u.String())
 		if err != nil {
 			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
 			return

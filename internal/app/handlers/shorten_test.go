@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage/mocks"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -24,6 +27,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 		name    string
 		request request
 		want    want
+		storage *mocks.URLStorageMock
 	}{
 		{
 			name: "should shorten google",
@@ -37,6 +41,11 @@ func Test_ShortenURLHandler(t *testing.T) {
 				statusCode:  http.StatusCreated,
 				body:        "http://localhost:8080/shortGoogle",
 			},
+			storage: func() *mocks.URLStorageMock {
+				urlStorage := new(mocks.URLStorageMock)
+				urlStorage.On("Store", "http://google.com").Return("shortGoogle", nil).Once()
+				return urlStorage
+			}(),
 		},
 		{
 			name: "should fail on empty body",
@@ -71,15 +80,35 @@ func Test_ShortenURLHandler(t *testing.T) {
 				statusCode: http.StatusBadRequest,
 			},
 		},
+		{
+			name: "should respond 500 on url storage error",
+			request: request{
+				url:    "/",
+				method: http.MethodPost,
+				body:   "http://google.com",
+			},
+			want: want{
+				statusCode: http.StatusInternalServerError,
+			},
+			storage: func() *mocks.URLStorageMock {
+				urlStorage := new(mocks.URLStorageMock)
+				urlStorage.On("Store", "http://google.com").Return("", errors.New("some error")).Once()
+				return urlStorage
+			}(),
+		},
 	}
-	urlStorage := new(URLStorageMock)
-	urlStorage.On("Store", "http://google.com").Return("shortGoogle", nil).Once()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := NewRouter(urlStorage)
+			st := tt.storage
+			if st == nil {
+				st = new(mocks.URLStorageMock)
+			}
+
+			r := NewRouter(st)
 			ts := httptest.NewServer(r)
 			defer ts.Close()
-			res := testRequest(t, ts, tt.request.method, tt.request.url, tt.request.body)
+			res := testRequest(t, ts, tt.request.method, tt.request.url, strings.NewReader(tt.request.body))
 
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusCreated {
@@ -89,8 +118,8 @@ func Test_ShortenURLHandler(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want.body, string(body))
 			}
+			st.AssertExpectations(t)
 		})
 	}
 
-	urlStorage.AssertExpectations(t)
 }
