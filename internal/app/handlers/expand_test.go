@@ -72,7 +72,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 			},
 			storage: func() *mocks.URLStorageMock {
 				urlStorage := new(mocks.URLStorageMock)
-				urlStorage.On("Load", "nonexistentId").Return("", storage.URLNotFoundErr).Once()
+				urlStorage.On("Load", "nonexistentId").Return("", storage.ErrURLNotFound).Once()
 				return urlStorage
 			}(),
 			want: want{

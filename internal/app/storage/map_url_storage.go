@@ -36,13 +36,13 @@ func (s *mapURLStorage) Store(url string) (key string, err error) {
 	return id, nil
 }
 
-// Load возвращает сохраненную ссылку по идентификатору. Возвращает ссылку, если она найдена, в противном случае URLNotFoundErr
+// Load возвращает сохраненную ссылку по идентификатору. Возвращает ссылку, если она найдена, в противном случае ErrURLNotFound
 func (s *mapURLStorage) Load(key string) (url string, err error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 	value, ok := s.m[key]
 	if !ok {
-		return "", URLNotFoundErr
+		return "", ErrURLNotFound
 	}
 	return value, nil
 }

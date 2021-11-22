@@ -13,7 +13,7 @@ func ExpandURLHandler(s storage.URLStorage) http.HandlerFunc {
 		urlID := chi.URLParam(r, "urlID")
 
 		u, err := s.Load(urlID)
-		if errors.Is(err, storage.URLNotFoundErr) {
+		if errors.Is(err, storage.ErrURLNotFound) {
 			http.NotFound(w, r)
 			return
 		}

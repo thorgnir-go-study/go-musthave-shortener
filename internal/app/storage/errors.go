@@ -2,5 +2,5 @@ package storage
 
 import "errors"
 
-// URLNotFoundErr ошибка "ссылка не найдена в хранилище"
-var URLNotFoundErr = errors.New("url not found in storage")
+// ErrURLNotFound ошибка "ссылка не найдена в хранилище"
+var ErrURLNotFound = errors.New("url not found in storage")
