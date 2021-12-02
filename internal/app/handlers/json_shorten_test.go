@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func Test_ShortenURLHandler(t *testing.T) {
+func Test_JSONShortenURLHandler(t *testing.T) {
 	type request struct {
 		url    string
 		method string
@@ -32,14 +32,14 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should shorten google",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "http://google.com",
+				body:   `{"url": "http://google.com"}`,
 			},
 			want: want{
-				contentType: "text/plain; charset=utf-8",
+				contentType: "application/json; charset=utf-8",
 				statusCode:  http.StatusCreated,
-				body:        "http://localhost:8080/shortGoogle",
+				body:        `{"result":"http://localhost:8080/shortGoogle"}`,
 			},
 			storage: func() *mocks.URLStorageMock {
 				urlStorage := new(mocks.URLStorageMock)
@@ -50,7 +50,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should fail on empty body",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
 				body:   "",
 			},
@@ -61,9 +61,9 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should fail on relative url",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "/somerelativeurl",
+				body:   `{"url": "/somerelativeurl"}`,
 			},
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -72,9 +72,9 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should fail on invalid url",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "some text",
+				body:   `{"url": "some text"}`,
 			},
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -83,9 +83,9 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should respond 500 on url storage error",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "http://google.com",
+				body:   `{"url": "http://google.com"}`,
 			},
 			want: want{
 				statusCode: http.StatusInternalServerError,

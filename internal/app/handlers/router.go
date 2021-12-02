@@ -18,6 +18,7 @@ func NewRouter(storage storage.URLStorage) chi.Router {
 
 	r.Post("/", ShortenURLHandler(storage))
 	r.Get("/{urlID}", ExpandURLHandler(storage))
+	r.Post("/api/shorten", JSONShortenURLHandler(storage))
 
 	return r
 }

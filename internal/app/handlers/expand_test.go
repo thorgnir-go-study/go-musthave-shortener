@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage/mocks"
 	"net/http"
@@ -107,7 +108,10 @@ func Test_ExpandURLHandler(t *testing.T) {
 
 			res := testRequest(t, ts, tt.request.method, tt.request.url, nil)
 			// statictest иначе ругается
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusTemporaryRedirect {
