@@ -11,7 +11,7 @@ import (
 )
 
 type request struct {
-	Url string `json:"url"`
+	URL string `json:"url"`
 }
 
 type response struct {
@@ -35,7 +35,7 @@ func JSONShortenURLHandler(s storage.URLStorage) http.HandlerFunc {
 			http.Error(w, "Invalid json", http.StatusBadRequest)
 		}
 
-		u, err := url.ParseRequestURI(req.Url)
+		u, err := url.ParseRequestURI(req.URL)
 		if err != nil {
 			http.Error(w, "Not a valid url", http.StatusBadRequest)
 			return
