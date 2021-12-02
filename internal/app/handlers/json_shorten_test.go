@@ -113,10 +113,7 @@ func Test_JSONShortenURLHandler(t *testing.T) {
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusCreated {
 				assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
-				defer func() {
-					err := res.Body.Close()
-					require.NoError(t, err)
-				}()
+				defer res.Body.Close()
 				body, err := io.ReadAll(res.Body)
 				require.NoError(t, err)
 				assert.Equal(t, tt.want.body, string(body))

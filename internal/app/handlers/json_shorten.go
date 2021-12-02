@@ -22,12 +22,7 @@ func JSONShortenURLHandler(s storage.URLStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
 
-		defer func() {
-			err := r.Body.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		}()
+		defer r.Body.Close()
 
 		if err != nil {
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)

@@ -10,6 +10,7 @@ import (
 // ExpandURLHandler обрабатывает запросы на сокращение ссылок
 func ExpandURLHandler(s storage.URLStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		urlID := chi.URLParam(r, "urlID")
 
 		u, err := s.Load(urlID)
