@@ -27,7 +27,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 		name    string
 		request request
 		want    want
-		storage *mocks.URLStorageMock
+		storage *mocks.URLStorage
 	}{
 		{
 			name: "should shorten google",
@@ -41,8 +41,8 @@ func Test_ShortenURLHandler(t *testing.T) {
 				statusCode:  http.StatusCreated,
 				body:        "http://localhost:8080/shortGoogle",
 			},
-			storage: func() *mocks.URLStorageMock {
-				urlStorage := new(mocks.URLStorageMock)
+			storage: func() *mocks.URLStorage {
+				urlStorage := new(mocks.URLStorage)
 				urlStorage.On("Store", "http://google.com").Return("shortGoogle", nil).Once()
 				return urlStorage
 			}(),
@@ -90,8 +90,8 @@ func Test_ShortenURLHandler(t *testing.T) {
 			want: want{
 				statusCode: http.StatusInternalServerError,
 			},
-			storage: func() *mocks.URLStorageMock {
-				urlStorage := new(mocks.URLStorageMock)
+			storage: func() *mocks.URLStorage {
+				urlStorage := new(mocks.URLStorage)
 				urlStorage.On("Store", "http://google.com").Return("", errors.New("some error")).Once()
 				return urlStorage
 			}(),
@@ -102,7 +102,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			st := tt.storage
 			if st == nil {
-				st = new(mocks.URLStorageMock)
+				st = new(mocks.URLStorage)
 			}
 
 			r := NewRouter(st)

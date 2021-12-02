@@ -24,7 +24,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 	tests := []struct {
 		name    string
 		request request
-		storage *mocks.URLStorageMock
+		storage *mocks.URLStorage
 		want    want
 	}{
 		{
@@ -33,8 +33,8 @@ func Test_ExpandURLHandler(t *testing.T) {
 				url:    "/shortGoogle",
 				method: http.MethodGet,
 			},
-			storage: func() *mocks.URLStorageMock {
-				urlStorage := new(mocks.URLStorageMock)
+			storage: func() *mocks.URLStorage {
+				urlStorage := new(mocks.URLStorage)
 				urlStorage.On("Load", "shortGoogle").Return("http://google.com", nil).Once()
 				return urlStorage
 			}(),
@@ -70,8 +70,8 @@ func Test_ExpandURLHandler(t *testing.T) {
 				url:    "/nonexistentId",
 				method: http.MethodGet,
 			},
-			storage: func() *mocks.URLStorageMock {
-				urlStorage := new(mocks.URLStorageMock)
+			storage: func() *mocks.URLStorage {
+				urlStorage := new(mocks.URLStorage)
 				urlStorage.On("Load", "nonexistentId").Return("", storage.ErrURLNotFound).Once()
 				return urlStorage
 			}(),
@@ -85,8 +85,8 @@ func Test_ExpandURLHandler(t *testing.T) {
 				url:    "/short",
 				method: http.MethodGet,
 			},
-			storage: func() *mocks.URLStorageMock {
-				urlStorage := new(mocks.URLStorageMock)
+			storage: func() *mocks.URLStorage {
+				urlStorage := new(mocks.URLStorage)
 				urlStorage.On("Load", "short").Return("", errors.New("Some error")).Once()
 				return urlStorage
 			}(),
@@ -99,7 +99,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			st := tt.storage
 			if st == nil {
-				st = new(mocks.URLStorageMock)
+				st = new(mocks.URLStorage)
 			}
 			r := NewRouter(st)
 			ts := httptest.NewServer(r)
