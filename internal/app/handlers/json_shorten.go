@@ -18,7 +18,7 @@ type response struct {
 	Result string `json:"result"`
 }
 
-func JSONShortenURLHandler(s storage.URLStorage, baseUrl string) http.HandlerFunc {
+func JSONShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
 
@@ -52,7 +52,7 @@ func JSONShortenURLHandler(s storage.URLStorage, baseUrl string) http.HandlerFun
 			return
 		}
 
-		responseObj := &response{Result: fmt.Sprintf("%s/%s", baseUrl, key)}
+		responseObj := &response{Result: fmt.Sprintf("%s/%s", baseURL, key)}
 		serializedResp, err := json.Marshal(responseObj)
 		if err != nil {
 			http.Error(w, "Can't serialize response", http.StatusInternalServerError)

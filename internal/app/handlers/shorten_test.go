@@ -99,7 +99,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 		},
 	}
 
-	baseUrl := "http://localhost:8080"
+	baseURL := "http://localhost:8080"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			st := tt.storage
@@ -107,7 +107,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 				st = new(mocks.URLStorage)
 			}
 
-			r := NewRouter(st, config.Config{BaseUrl: baseUrl})
+			r := NewRouter(st, config.Config{BaseURL: baseURL})
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 			res := testRequest(t, ts, tt.request.method, tt.request.url, strings.NewReader(tt.request.body))

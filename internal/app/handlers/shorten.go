@@ -10,7 +10,7 @@ import (
 )
 
 //ShortenURLHandler обрабатывает запросы на развертывание сокращенных ссылок
-func ShortenURLHandler(s storage.URLStorage, baseUrl string) http.HandlerFunc {
+func ShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
 
@@ -43,7 +43,7 @@ func ShortenURLHandler(s storage.URLStorage, baseUrl string) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", baseUrl, key)))
+		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", baseURL, key)))
 		if err != nil {
 			log.Printf("Write failed: %v", err)
 		}

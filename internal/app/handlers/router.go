@@ -17,9 +17,9 @@ func NewRouter(storage storage.URLStorage, cfg config.Config) chi.Router {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(10 * time.Second))
 
-	r.Post("/", ShortenURLHandler(storage, cfg.BaseUrl))
+	r.Post("/", ShortenURLHandler(storage, cfg.BaseURL))
 	r.Get("/{urlID}", ExpandURLHandler(storage))
-	r.Post("/api/shorten", JSONShortenURLHandler(storage, cfg.BaseUrl))
+	r.Post("/api/shorten", JSONShortenURLHandler(storage, cfg.BaseURL))
 
 	return r
 }
