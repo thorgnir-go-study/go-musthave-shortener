@@ -16,6 +16,9 @@ func main() {
 		log.Fatalln("Error parsing config")
 	}
 
-	urlStorage := storage.CreateMapURLStorage()
+	urlStorage, err := storage.CreateMapURLStorage(storage.WithFilePersistance(cfg.StorageFilePath))
+	if err != nil {
+		log.Fatalln(err)
+	}
 	app.StartURLShortenerServer(cfg, urlStorage)
 }

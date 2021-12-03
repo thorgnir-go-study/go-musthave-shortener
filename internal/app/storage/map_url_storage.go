@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"log"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -8,18 +9,43 @@ import (
 )
 
 type mapURLStorage struct {
-	mx       sync.RWMutex
-	m        map[string]string
-	keysRand rand.Rand
+	mx        sync.RWMutex
+	m         map[string]string
+	keysRand  rand.Rand
+	persister URLStoragePersister
 }
 
+type MapURLStorageOption func(*mapURLStorage) error
+
 // CreateMapURLStorage создает реализацию хранилища ссылок в памяти, на основе map
-func CreateMapURLStorage() *mapURLStorage {
+func CreateMapURLStorage(opts ...MapURLStorageOption) (*mapURLStorage, error) {
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
-	return &mapURLStorage{
+	storage := &mapURLStorage{
 		m:        make(map[string]string),
 		keysRand: *r,
+	}
+
+	for _, opt := range opts {
+		err := opt(storage)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return storage, nil
+}
+
+func WithFilePersistance(filename string) MapURLStorageOption {
+	return func(storage *mapURLStorage) error {
+		persister := createNewPlainTextFileURLStoragePersister(filename)
+		storage.persister = persister
+		err := storage.persister.Load(storage.m)
+		log.Println("loaded urls")
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 }
 
@@ -32,6 +58,14 @@ func (s *mapURLStorage) Store(url string) (key string, err error) {
 		id = strconv.FormatUint(s.keysRand.Uint64(), 36)
 	}
 	s.m[id] = url
+
+	if s.persister != nil {
+		err := s.persister.Store(id, url)
+		if err != nil {
+			log.Println(err)
+			return id, err
+		}
+	}
 
 	return id, nil
 }
