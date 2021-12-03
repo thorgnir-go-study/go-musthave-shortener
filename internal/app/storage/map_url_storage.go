@@ -41,7 +41,6 @@ func WithFilePersistance(filename string) MapURLStorageOption {
 		persister := createNewPlainTextFileURLStoragePersister(filename)
 		storage.persister = persister
 		err := storage.persister.Load(storage.m)
-		log.Println("loaded urls")
 		if err != nil {
 			return err
 		}

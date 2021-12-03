@@ -54,14 +54,11 @@ func (p *plainTextFileURLStoragePersister) Load(dest map[string]string) error {
 	if err != nil {
 		return nil
 	}
-	fmt.Println("открыли файл")
 	defer file.Close()
 	s := bufio.NewScanner(file)
 
 	for s.Scan() {
 		dataStr := s.Text()
-		fmt.Printf("прочитали строку %s", dataStr)
-
 		splittedData := strings.Split(dataStr, "\t")
 		if len(splittedData) != 2 {
 			return errors.New("invalid string in url storage file")
