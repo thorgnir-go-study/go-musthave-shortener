@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage/mocks"
 	"net/http"
@@ -95,13 +96,15 @@ func Test_ExpandURLHandler(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			st := tt.storage
 			if st == nil {
 				st = new(mocks.URLStorage)
 			}
-			r := NewRouter(st)
+			cfg := config.Config{}
+			r := NewRouter(st, cfg)
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 

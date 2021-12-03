@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage/mocks"
 	"io"
 	"net/http"
@@ -23,6 +24,7 @@ func Test_JSONShortenURLHandler(t *testing.T) {
 		statusCode  int
 		body        string
 	}
+
 	tests := []struct {
 		name    string
 		request request
@@ -97,6 +99,7 @@ func Test_JSONShortenURLHandler(t *testing.T) {
 			}(),
 		},
 	}
+	baseUrl := "http://localhost:8080"
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -105,7 +108,7 @@ func Test_JSONShortenURLHandler(t *testing.T) {
 				st = new(mocks.URLStorage)
 			}
 
-			r := NewRouter(st)
+			r := NewRouter(st, config.Config{BaseUrl: baseUrl})
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 			res := testRequest(t, ts, tt.request.method, tt.request.url, strings.NewReader(tt.request.body))
