@@ -41,16 +41,16 @@ func main() {
 		cfg.StorageFilePath = *storagePathFlag
 	}
 
-	urlStorage, err := storage.CreateMapURLStorage()
+	var options []storage.MapURLStorageOption
+	if cfg.StorageFilePath != "" {
+		options = append(options, storage.WithFilePersistance(cfg.StorageFilePath))
+	}
+
+	urlStorage, err := storage.CreateMapURLStorage(options...)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	if cfg.StorageFilePath != "" {
-		err := storage.WithFilePersistance(cfg.StorageFilePath)(urlStorage)
-		if err != nil {
-			log.Fatalln(err)
-		}
-	}
+
 	if err != nil {
 		log.Fatalln(err)
 	}
