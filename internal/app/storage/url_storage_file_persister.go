@@ -26,6 +26,9 @@ func createNewPlainTextFileURLStoragePersister(filename string) *plainTextFileUR
 }
 
 func (p *plainTextFileURLStoragePersister) Store(id string, url string) error {
+// тут возможны разные подходы, в зависимости от предполагаемой нагрузки
+// если предположить, что запись будет частой, то имеет смысл держать файл открытым и в структуру добавить writer
+// текущая реализация для варианта "пишем редко"
 	p.mx.Lock()
 	defer p.mx.Unlock()
 	file, err := os.OpenFile(p.filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0777)
