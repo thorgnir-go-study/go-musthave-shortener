@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func Test_ShortenURLHandler(t *testing.T) {
+func Test_JSONShortenURLHandler(t *testing.T) {
 	type request struct {
 		url    string
 		method string
@@ -24,6 +24,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 		statusCode  int
 		body        string
 	}
+
 	tests := []struct {
 		name    string
 		request request
@@ -33,14 +34,14 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should shorten google",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "http://google.com",
+				body:   `{"url": "http://google.com"}`,
 			},
 			want: want{
-				contentType: "text/plain; charset=utf-8",
+				contentType: "application/json; charset=utf-8",
 				statusCode:  http.StatusCreated,
-				body:        "http://localhost:8080/shortGoogle",
+				body:        `{"result":"http://localhost:8080/shortGoogle"}`,
 			},
 			storage: func() *mocks.URLStorage {
 				urlStorage := new(mocks.URLStorage)
@@ -51,7 +52,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should fail on empty body",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
 				body:   "",
 			},
@@ -62,9 +63,9 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should fail on relative url",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "/somerelativeurl",
+				body:   `{"url": "/somerelativeurl"}`,
 			},
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -73,9 +74,9 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should fail on invalid url",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "some text",
+				body:   `{"url": "some text"}`,
 			},
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -84,9 +85,9 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should respond 500 on url storage error",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "http://google.com",
+				body:   `{"url": "http://google.com"}`,
 			},
 			want: want{
 				statusCode: http.StatusInternalServerError,
@@ -98,8 +99,8 @@ func Test_ShortenURLHandler(t *testing.T) {
 			}(),
 		},
 	}
-
 	baseURL := "http://localhost:8080"
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			st := tt.storage

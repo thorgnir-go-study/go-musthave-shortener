@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"io"
@@ -9,23 +10,32 @@ import (
 	"net/url"
 )
 
-//ShortenURLHandler обрабатывает запросы на развертывание сокращенных ссылок
-func ShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
+type request struct {
+	URL string `json:"url"`
+}
+
+type response struct {
+	Result string `json:"result"`
+}
+
+func JSONShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
 
-		defer func() {
-			err := r.Body.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		}()
+		defer r.Body.Close()
 
 		if err != nil {
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)
 			return
 		}
-		u, err := url.ParseRequestURI(string(bodyContent))
+
+		var req request
+
+		if err := json.Unmarshal(bodyContent, &req); err != nil {
+			http.Error(w, "Invalid json", http.StatusBadRequest)
+		}
+
+		u, err := url.ParseRequestURI(req.URL)
 		if err != nil {
 			http.Error(w, "Not a valid url", http.StatusBadRequest)
 			return
@@ -41,9 +51,17 @@ func ShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+		responseObj := &response{Result: fmt.Sprintf("%s/%s", baseURL, key)}
+		serializedResp, err := json.Marshal(responseObj)
+		if err != nil {
+			http.Error(w, "Can't serialize response", http.StatusInternalServerError)
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", baseURL, key)))
+
+		_, err = w.Write(serializedResp)
 		if err != nil {
 			log.Printf("Write failed: %v", err)
 		}
