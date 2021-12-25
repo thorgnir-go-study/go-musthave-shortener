@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"time"
 )
@@ -16,6 +17,8 @@ func NewRouter(storage storage.URLStorage, cfg config.Config) chi.Router {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(10 * time.Second))
+	r.Use(middleware.Compress(5))
+	r.Use(middlewares.GzipRequestDecompressor)
 
 	r.Post("/", ShortenURLHandler(storage, cfg.BaseURL))
 	r.Get("/{urlID}", ExpandURLHandler(storage))
