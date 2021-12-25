@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -19,7 +18,6 @@ func (gz gzipDecompressResponseReader) Close() error {
 
 func GzipRequestDecompressor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("in middleware", r.Header)
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 			gzr, err := gzip.NewReader(r.Body)
 			if err != nil {
