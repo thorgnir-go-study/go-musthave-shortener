@@ -49,7 +49,6 @@ func TestRequestDecompress(t *testing.T) {
 			require.NoError(t, err)
 			if tt.compress {
 				req.Header.Set("Content-Encoding", "gzip")
-				req.Header.Set("Content-Type", "application/x-gzip")
 			}
 
 			resp, err := http.DefaultClient.Do(req)
