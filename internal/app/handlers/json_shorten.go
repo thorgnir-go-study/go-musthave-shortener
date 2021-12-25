@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"io"
 	"log"
@@ -21,9 +24,7 @@ type response struct {
 func JSONShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
-
 		defer r.Body.Close()
-
 		if err != nil {
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)
 			return
@@ -46,7 +47,18 @@ func JSONShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFun
 			return
 		}
 
-		key, err := s.Store(u.String())
+		userId, err := ca.GetUserId(r)
+		if err != nil {
+			if errors.Is(err, cookieauth.ErrNoTokenFound) {
+				userId = uuid.NewString()
+				ca.SetUserIdCookie(w, userId)
+			} else {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		key, err := s.Store(u.String(), userId)
 		if err != nil {
 			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
 			return

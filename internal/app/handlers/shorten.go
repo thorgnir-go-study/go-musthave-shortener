@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"io"
 	"log"
@@ -36,7 +39,18 @@ func ShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 			return
 		}
 
-		key, err := s.Store(u.String())
+		userId, err := ca.GetUserId(r)
+		if err != nil {
+			if errors.Is(err, cookieauth.ErrNoTokenFound) {
+				userId = uuid.NewString()
+				ca.SetUserIdCookie(w, userId)
+			} else {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		key, err := s.Store(u.String(), userId)
 		if err != nil {
 			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
 			return

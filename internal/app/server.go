@@ -10,6 +10,7 @@ import (
 
 //StartURLShortenerServer старт нового сервера сокращения ссылок
 func StartURLShortenerServer(cfg config.Config, storage storage.URLStorage) {
+
 	r := handlers.NewRouter(storage, cfg)
 	log.Fatal(http.ListenAndServe(cfg.ServerAddress, r))
 }

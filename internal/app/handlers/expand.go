@@ -23,7 +23,7 @@ func ExpandURLHandler(s storage.URLStorage) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("Location", u)
+		w.Header().Set("Location", u.OriginalURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 
 	}

@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage/mocks"
@@ -44,7 +45,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 			},
 			storage: func() *mocks.URLStorage {
 				urlStorage := new(mocks.URLStorage)
-				urlStorage.On("Store", "http://google.com").Return("shortGoogle", nil).Once()
+				urlStorage.On("Store", "http://google.com", mock.Anything).Return("shortGoogle", nil).Once()
 				return urlStorage
 			}(),
 		},
@@ -93,7 +94,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 			},
 			storage: func() *mocks.URLStorage {
 				urlStorage := new(mocks.URLStorage)
-				urlStorage.On("Store", "http://google.com").Return("", errors.New("some error")).Once()
+				urlStorage.On("Store", "http://google.com", mock.Anything).Return("", errors.New("some error")).Once()
 				return urlStorage
 			}(),
 		},

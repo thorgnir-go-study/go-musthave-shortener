@@ -36,7 +36,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 			},
 			storage: func() *mocks.URLStorage {
 				urlStorage := new(mocks.URLStorage)
-				urlStorage.On("Load", "shortGoogle").Return("http://google.com", nil).Once()
+				urlStorage.On("Load", "shortGoogle").Return(storage.URLEntity{OriginalURL: "http://google.com"}, nil).Once()
 				return urlStorage
 			}(),
 			want: want{
@@ -73,7 +73,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 			},
 			storage: func() *mocks.URLStorage {
 				urlStorage := new(mocks.URLStorage)
-				urlStorage.On("Load", "nonexistentId").Return("", storage.ErrURLNotFound).Once()
+				urlStorage.On("Load", "nonexistentId").Return(storage.URLEntity{}, storage.ErrURLNotFound).Once()
 				return urlStorage
 			}(),
 			want: want{
