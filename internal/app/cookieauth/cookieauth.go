@@ -28,7 +28,7 @@ func New(key []byte, cookieName string) *CookieAuth {
 	return ca
 }
 
-func (ca *CookieAuth) GetUserId(r *http.Request) (string, error) {
+func (ca *CookieAuth) GetUserID(r *http.Request) (string, error) {
 	tokenString := ca.getTokenFromCookie(r)
 	if tokenString == "" {
 		return "", ErrNoTokenFound
@@ -37,7 +37,7 @@ func (ca *CookieAuth) GetUserId(r *http.Request) (string, error) {
 	return ca.verifyToken(tokenString)
 }
 
-func (ca *CookieAuth) SetUserIdCookie(w http.ResponseWriter, uid string) {
+func (ca *CookieAuth) SetUserIDCookie(w http.ResponseWriter, uid string) {
 	token := fmt.Sprintf("%s:%s", uid, ca.calcHash(uid))
 	cookie := &http.Cookie{
 		Name:  ca.cookieName,

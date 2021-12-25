@@ -12,24 +12,24 @@ import (
 )
 
 type responseEntity struct {
-	ShortUrl    string `json:"short_url"`
-	OriginalUrl string `json:"original_url"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 func LoadByUserHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userId, err := ca.GetUserId(r)
+		userID, err := ca.GetUserID(r)
 		if err != nil {
 			if errors.Is(err, cookieauth.ErrNoTokenFound) {
-				userId = uuid.NewString()
-				ca.SetUserIdCookie(w, userId)
+				userID = uuid.NewString()
+				ca.SetUserIDCookie(w, userID)
 			} else {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
 		}
 
-		urlEntities, err := s.LoadByUserID(userId)
+		urlEntities, err := s.LoadByUserID(userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -42,8 +42,8 @@ func LoadByUserHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 		respEntities := make([]responseEntity, len(urlEntities))
 		for idx := range urlEntities {
 			respEntities[idx] = responseEntity{
-				ShortUrl:    fmt.Sprintf("%s/%s", baseURL, urlEntities[idx].ID),
-				OriginalUrl: urlEntities[idx].OriginalURL,
+				ShortURL:    fmt.Sprintf("%s/%s", baseURL, urlEntities[idx].ID),
+				OriginalURL: urlEntities[idx].OriginalURL,
 			}
 		}
 

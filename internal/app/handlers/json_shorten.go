@@ -47,18 +47,18 @@ func JSONShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFun
 			return
 		}
 
-		userId, err := ca.GetUserId(r)
+		userID, err := ca.GetUserID(r)
 		if err != nil {
 			if errors.Is(err, cookieauth.ErrNoTokenFound) {
-				userId = uuid.NewString()
-				ca.SetUserIdCookie(w, userId)
+				userID = uuid.NewString()
+				ca.SetUserIDCookie(w, userID)
 			} else {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
 		}
 
-		key, err := s.Store(u.String(), userId)
+		key, err := s.Store(u.String(), userID)
 		if err != nil {
 			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
 			return
