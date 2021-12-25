@@ -12,35 +12,6 @@ import (
 	"testing"
 )
 
-func simpleHandler(w http.ResponseWriter, r *http.Request) {
-	bodyContent, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/plain")
-	_, err = w.Write(bodyContent)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func gzipCompressString(input string) ([]byte, error) {
-	var b bytes.Buffer
-	gz := gzip.NewWriter(&b)
-
-	_, err := gz.Write([]byte(input))
-	if err != nil {
-		return nil, err
-	}
-	err = gz.Close()
-	if err != nil {
-		return nil, err
-	}
-	return b.Bytes(), nil
-}
-
 func TestRequestDecompress(t *testing.T) {
 	r := chi.NewRouter()
 
@@ -72,15 +43,8 @@ func TestRequestDecompress(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var requestBody []byte
-			if tt.compress {
-				compressed, err := gzipCompressString(tt.requestBody)
-				require.NoError(t, err)
-				requestBody = compressed
-			} else {
-				requestBody = []byte(tt.requestBody)
-			}
-
+			requestBody, err := getRequestBody(tt.requestBody, tt.compress)
+			require.NoError(t, err)
 			req, err := http.NewRequest("POST", ts.URL+"/testHandler", bytes.NewReader(requestBody))
 			require.NoError(t, err)
 			if tt.compress {
@@ -97,4 +61,39 @@ func TestRequestDecompress(t *testing.T) {
 			assert.Equal(t, tt.want, string(respBody))
 		})
 	}
+}
+
+func simpleHandler(w http.ResponseWriter, r *http.Request) {
+	bodyContent, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain")
+	_, err = w.Write(bodyContent)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func gzipCompressString(input string) ([]byte, error) {
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+	_, err := gz.Write([]byte(input))
+	if err != nil {
+		return nil, err
+	}
+	err = gz.Close()
+	if err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+
+func getRequestBody(input string, compress bool) ([]byte, error) {
+	if compress {
+		return gzipCompressString(input)
+	}
+	return []byte(input), nil
 }
