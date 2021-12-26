@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+// TODO: написать тесты
 var _ = Describe("LoadByUser", func() {
 	It("dummy test", func() {
 		fmt.Println("bla")
