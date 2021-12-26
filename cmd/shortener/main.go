@@ -24,9 +24,10 @@ func init() {
 }
 
 func createStorage(cfg config.Config) (storage.URLStorage, error) {
-	if cfg.DatabaseDSN != "" {
-		return createDBStorage(cfg)
-	}
+	// временно вырубаем бд для проверки тестов
+	//if cfg.DatabaseDSN != "" {
+	//	return createDBStorage(cfg)
+	//}
 	return createInMemoryStorage(cfg)
 }
 
