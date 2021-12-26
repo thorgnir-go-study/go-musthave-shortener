@@ -67,7 +67,6 @@ func (s *dbURLStorage) Load(key string) (URLEntity, error) {
 	result := s.DB.QueryRowContext(ctx, query, key)
 	err := result.Scan(&entity.ID, &entity.OriginalURL, &entity.UserID)
 	if err != nil {
-		fmt.Println(err)
 		if errors.Is(err, sql.ErrNoRows) {
 			return URLEntity{}, ErrURLNotFound
 		}
