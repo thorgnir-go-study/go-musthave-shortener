@@ -48,7 +48,7 @@ func WithFilePersistance(filename string) MapURLStorageOption {
 	}
 }
 
-// Store сохраненяет ссылку в хранилище, возвращает идентификатор сохраненной ссылки
+// Store сохраняняет ссылку в хранилище, возвращает идентификатор сохраненной ссылки
 func (s *mapURLStorage) Store(url string, userID string) (key string, err error) {
 	s.mx.Lock()
 	defer s.mx.Unlock()
