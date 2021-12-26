@@ -60,13 +60,14 @@ func (s *dbURLStorage) Store(originalURL string, userID string) (string, error) 
 
 //goland:noinspection SqlNoDataSourceInspection,SqlResolve
 func (s *dbURLStorage) Load(key string) (URLEntity, error) {
-	query := `select url_id, original_url, user_id  from urls where link_id = $1`
+	query := `select url_id, original_url, user_id  from urls where url_id = $1`
 	var entity URLEntity
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	result := s.DB.QueryRowContext(ctx, query, key)
 	err := result.Scan(&entity.ID, &entity.OriginalURL, &entity.UserID)
 	if err != nil {
+		fmt.Println(err)
 		if errors.Is(err, sql.ErrNoRows) {
 			return URLEntity{}, ErrURLNotFound
 		}
