@@ -20,7 +20,7 @@ func LoadByUserHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := ca.GetUserID(r)
 		if err != nil {
-			if errors.Is(err, cookieauth.ErrNoTokenFound) {
+			if errors.Is(err, cookieauth.ErrNoTokenFound) || errors.Is(err, cookieauth.ErrInvalidToken) {
 				userID = uuid.NewString()
 				ca.SetUserIDCookie(w, userID)
 			} else {
