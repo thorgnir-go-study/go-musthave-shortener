@@ -17,8 +17,8 @@ type mapURLStorage struct {
 
 type MapURLStorageOption func(*mapURLStorage) error
 
-// CreateMapURLStorage создает реализацию хранилища ссылок в памяти, на основе map
-func CreateMapURLStorage(opts ...MapURLStorageOption) (*mapURLStorage, error) {
+// NewMapURLStorage создает реализацию хранилища ссылок в памяти, на основе map
+func NewMapURLStorage(opts ...MapURLStorageOption) (*mapURLStorage, error) {
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
 	storage := &mapURLStorage{
@@ -95,4 +95,8 @@ func (s *mapURLStorage) LoadByUserID(userID string) ([]URLEntity, error) {
 		}
 	}
 	return entities, nil
+}
+
+func (s *mapURLStorage) Ping() error {
+	return nil
 }

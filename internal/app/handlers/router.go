@@ -29,6 +29,7 @@ func NewRouter(storage storage.URLStorage, cfg config.Config) chi.Router {
 	r.Get("/{urlID}", ExpandURLHandler(storage))
 	r.Post("/api/shorten", JSONShortenURLHandler(storage, cfg.BaseURL))
 	r.Get("/user/urls", LoadByUserHandler(storage, cfg.BaseURL))
+	r.Get("/ping", PingHandler(storage))
 
 	return r
 }

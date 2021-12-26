@@ -8,4 +8,6 @@ type URLStorage interface {
 	Load(userID string) (URLEntity, error)
 	// LoadByUserID возвращает все ссылки созданные юзером
 	LoadByUserID(userID string) ([]URLEntity, error)
+	// Status возвращает статус репозитория
+	Ping() error
 }

@@ -56,6 +56,20 @@ func (_m *URLStorage) LoadByUserID(userID string) ([]storage.URLEntity, error) {
 	return r0, r1
 }
 
+// Ping provides a mock function with given fields:
+func (_m *URLStorage) Ping() error {
+	ret := _m.Called()
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Store provides a mock function with given fields: originalURL, userID
 func (_m *URLStorage) Store(originalURL string, userID string) (string, error) {
 	ret := _m.Called(originalURL, userID)
