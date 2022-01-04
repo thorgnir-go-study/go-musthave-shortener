@@ -75,8 +75,8 @@ func (s *Service) JSONShortenURLHandler() http.HandlerFunc {
 			status = http.StatusConflict
 		}
 
-		responseObj := &jsonShortenResponse{Result: fmt.Sprintf("%s/%s", s.Config.BaseURL, id)}
-		serializedResp, err := json.Marshal(responseObj)
+		resp := &jsonShortenResponse{Result: fmt.Sprintf("%s/%s", s.Config.BaseURL, id)}
+		respJSON, err := json.Marshal(resp)
 		if err != nil {
 			http.Error(w, "Can't serialize response", http.StatusInternalServerError)
 		}
@@ -84,7 +84,7 @@ func (s *Service) JSONShortenURLHandler() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(status)
 
-		_, err = w.Write(serializedResp)
+		_, err = w.Write(respJSON)
 		if err != nil {
 			log.Printf("Write failed: %v", err)
 		}

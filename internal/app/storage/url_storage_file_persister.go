@@ -31,7 +31,7 @@ func (p *plainTextFileURLStoragePersister) Store(entity URLEntity) error {
 	// текущая реализация для варианта "пишем редко"
 	p.mx.Lock()
 	defer p.mx.Unlock()
-	file, err := os.OpenFile(p.filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0777)
+	file, err := os.OpenFile(p.filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
