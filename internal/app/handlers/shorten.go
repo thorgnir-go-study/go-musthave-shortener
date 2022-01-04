@@ -61,10 +61,7 @@ func (s *Service) ShortenURLHandler() http.HandlerFunc {
 			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
 			return
 		}
-		if err != nil {
-			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
-			return
-		}
+
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusCreated)
 		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", s.Config.BaseURL, urlEntity.ID)))

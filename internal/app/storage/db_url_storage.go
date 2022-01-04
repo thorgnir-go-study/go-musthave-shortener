@@ -18,8 +18,8 @@ type dbURLStorage struct {
 
 var (
 	insertStmt         *sqlx.NamedStmt
-	getByUrlIdStmt     *sqlx.Stmt
-	selectByUserIdStmt *sqlx.Stmt
+	getByURLIDStmt     *sqlx.Stmt
+	selectByUserIDStmt *sqlx.Stmt
 )
 
 func NewDBURLStorage(connectionString string) (*dbURLStorage, error) {
@@ -49,11 +49,11 @@ func prepareStatements(db *sqlx.DB) error {
 		return err
 	}
 
-	if getByUrlIdStmt, err = db.Preparex(`select url_id, original_url, user_id  from urls where url_id = $1`); err != nil {
+	if getByURLIDStmt, err = db.Preparex(`select url_id, original_url, user_id  from urls where url_id = $1`); err != nil {
 		return err
 	}
 
-	if selectByUserIdStmt, err = db.Preparex(`select url_id, original_url, user_id  from urls where user_id=$1`); err != nil {
+	if selectByUserIDStmt, err = db.Preparex(`select url_id, original_url, user_id  from urls where user_id=$1`); err != nil {
 		return err
 	}
 
@@ -101,7 +101,7 @@ func (s *dbURLStorage) Load(key string) (URLEntity, error) {
 	var entity URLEntity
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	err := getByUrlIdStmt.GetContext(ctx, &entity, key)
+	err := getByURLIDStmt.GetContext(ctx, &entity, key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return URLEntity{}, ErrURLNotFound
@@ -116,7 +116,7 @@ func (s *dbURLStorage) LoadByUserID(userID string) ([]URLEntity, error) {
 	var result []URLEntity
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	if err := selectByUserIdStmt.SelectContext(ctx, &result, userID); err != nil {
+	if err := selectByUserIDStmt.SelectContext(ctx, &result, userID); err != nil {
 		return nil, err
 	}
 	return result, nil
