@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
 	shortenerMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/shortener/mocks"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
@@ -37,7 +38,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Load", "shortGoogle").Return(storage.URLEntity{OriginalURL: "http://google.com"}, nil).Once()
+				urlStorage.On("Load", mock.Anything, "shortGoogle").Return(storage.URLEntity{OriginalURL: "http://google.com"}, nil).Once()
 				return urlStorage
 			}(),
 			want: want{
@@ -74,7 +75,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Load", "nonexistentId").Return(storage.URLEntity{}, storage.ErrURLNotFound).Once()
+				urlStorage.On("Load", mock.Anything, "nonexistentId").Return(storage.URLEntity{}, storage.ErrURLNotFound).Once()
 				return urlStorage
 			}(),
 			want: want{
@@ -89,7 +90,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Load", "short").Return("", errors.New("Some error")).Once()
+				urlStorage.On("Load", mock.Anything, "short").Return("", errors.New("Some error")).Once()
 				return urlStorage
 			}(),
 			want: want{

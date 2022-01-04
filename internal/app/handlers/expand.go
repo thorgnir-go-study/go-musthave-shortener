@@ -13,7 +13,7 @@ func (s *Service) ExpandURLHandler() http.HandlerFunc {
 		defer r.Body.Close()
 		urlID := chi.URLParam(r, "urlID")
 
-		u, err := s.Repository.Load(urlID)
+		u, err := s.Repository.Load(r.Context(), urlID)
 		if errors.Is(err, storage.ErrURLNotFound) {
 			http.NotFound(w, r)
 			return

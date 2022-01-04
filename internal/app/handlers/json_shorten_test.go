@@ -48,7 +48,7 @@ func Test_JSONShortenURLHandler(t *testing.T) {
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Store", mock.Anything).Return(nil).Once()
+				urlStorage.On("Store", mock.Anything, mock.Anything).Return(nil).Once()
 				return urlStorage
 			}(),
 			idGenerator: func() *shortenerMocks.URLIDGenerator {
@@ -102,7 +102,7 @@ func Test_JSONShortenURLHandler(t *testing.T) {
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Store", mock.Anything).Return("", errors.New("some error")).Once()
+				urlStorage.On("Store", mock.Anything, mock.Anything).Return("", errors.New("some error")).Once()
 				return urlStorage
 			}(),
 			idGenerator: func() *shortenerMocks.URLIDGenerator {

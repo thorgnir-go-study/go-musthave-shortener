@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"github.com/caarlos0/env/v6"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app"
@@ -45,7 +46,7 @@ func createInMemoryStorage(cfg config.Config) (storage.URLStorager, error) {
 }
 
 func createDBStorage(cfg config.Config) (storage.URLStorager, error) {
-	urlStorage, err := storage.NewDBURLStorage(cfg.DatabaseDSN)
+	urlStorage, err := storage.NewDBURLStorage(context.Background(), cfg.DatabaseDSN)
 	if err != nil {
 		return nil, err
 	}

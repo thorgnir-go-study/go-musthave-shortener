@@ -14,20 +14,20 @@ type URLStorager struct {
 	mock.Mock
 }
 
-// Load provides a mock function with given fields: key
-func (_m *URLStorager) Load(key string) (storage.URLEntity, error) {
-	ret := _m.Called(key)
+// Load provides a mock function with given fields: ctx, key
+func (_m *URLStorager) Load(ctx context.Context, key string) (storage.URLEntity, error) {
+	ret := _m.Called(ctx, key)
 
 	var r0 storage.URLEntity
-	if rf, ok := ret.Get(0).(func(string) storage.URLEntity); ok {
-		r0 = rf(key)
+	if rf, ok := ret.Get(0).(func(context.Context, string) storage.URLEntity); ok {
+		r0 = rf(ctx, key)
 	} else {
 		r0 = ret.Get(0).(storage.URLEntity)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(key)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, key)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -35,13 +35,13 @@ func (_m *URLStorager) Load(key string) (storage.URLEntity, error) {
 	return r0, r1
 }
 
-// LoadByUserID provides a mock function with given fields: userID
-func (_m *URLStorager) LoadByUserID(userID string) ([]storage.URLEntity, error) {
-	ret := _m.Called(userID)
+// LoadByUserID provides a mock function with given fields: ctx, userID
+func (_m *URLStorager) LoadByUserID(ctx context.Context, userID string) ([]storage.URLEntity, error) {
+	ret := _m.Called(ctx, userID)
 
 	var r0 []storage.URLEntity
-	if rf, ok := ret.Get(0).(func(string) []storage.URLEntity); ok {
-		r0 = rf(userID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) []storage.URLEntity); ok {
+		r0 = rf(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]storage.URLEntity)
@@ -49,8 +49,8 @@ func (_m *URLStorager) LoadByUserID(userID string) ([]storage.URLEntity, error) 
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(userID)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, userID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -58,13 +58,13 @@ func (_m *URLStorager) LoadByUserID(userID string) ([]storage.URLEntity, error) 
 	return r0, r1
 }
 
-// Ping provides a mock function with given fields:
-func (_m *URLStorager) Ping() error {
-	ret := _m.Called()
+// Ping provides a mock function with given fields: ctx
+func (_m *URLStorager) Ping(ctx context.Context) error {
+	ret := _m.Called(ctx)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -72,13 +72,13 @@ func (_m *URLStorager) Ping() error {
 	return r0
 }
 
-// Store provides a mock function with given fields: urlEntity
-func (_m *URLStorager) Store(urlEntity storage.URLEntity) error {
-	ret := _m.Called(urlEntity)
+// Store provides a mock function with given fields: ctx, urlEntity
+func (_m *URLStorager) Store(ctx context.Context, urlEntity storage.URLEntity) error {
+	ret := _m.Called(ctx, urlEntity)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(storage.URLEntity) error); ok {
-		r0 = rf(urlEntity)
+	if rf, ok := ret.Get(0).(func(context.Context, storage.URLEntity) error); ok {
+		r0 = rf(ctx, urlEntity)
 	} else {
 		r0 = ret.Error(0)
 	}

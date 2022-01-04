@@ -64,7 +64,7 @@ func (s *Service) JSONShortenURLHandler() http.HandlerFunc {
 			UserID:      userID,
 		}
 		status := http.StatusCreated
-		err = s.Repository.Store(urlEntity)
+		err = s.Repository.Store(r.Context(), urlEntity)
 		if err != nil {
 			var errExists *storage.ErrURLExists
 			if !errors.As(err, &errExists) {

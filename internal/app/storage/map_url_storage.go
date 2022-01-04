@@ -44,9 +44,12 @@ func WithFilePersistance(filename string) MapURLStorageOption {
 }
 
 // Store implements URLStorager.Store
-func (s *mapURLStorage) Store(urlEntity URLEntity) error {
+func (s *mapURLStorage) Store(_ context.Context, urlEntity URLEntity) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
+	// По заданию было добавить уникальный индекс по оригинальной ссылке только в хранилище БД
+	// Поэтому тут проверка уникальности нереализована.
+	// Можно реализовать, но будет крайне неэффективно при данной модели хранения - придется перебирать все записи
 	s.m[urlEntity.ID] = urlEntity
 
 	if s.persister != nil {
@@ -59,7 +62,7 @@ func (s *mapURLStorage) Store(urlEntity URLEntity) error {
 	return nil
 }
 
-func (s *mapURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntity) error {
+func (s *mapURLStorage) StoreBatch(_ context.Context, entitiesBatch []URLEntity) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 	for _, urlEntity := range entitiesBatch {
@@ -69,7 +72,7 @@ func (s *mapURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntit
 }
 
 // Load implements URLStorager.Load
-func (s *mapURLStorage) Load(key string) (urlEntity URLEntity, err error) {
+func (s *mapURLStorage) Load(_ context.Context, key string) (urlEntity URLEntity, err error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 	value, ok := s.m[key]
@@ -80,7 +83,7 @@ func (s *mapURLStorage) Load(key string) (urlEntity URLEntity, err error) {
 }
 
 // LoadByUserID implements URLStorager.LoadByUserID
-func (s *mapURLStorage) LoadByUserID(userID string) ([]URLEntity, error) {
+func (s *mapURLStorage) LoadByUserID(_ context.Context, userID string) ([]URLEntity, error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 	entities := make([]URLEntity, 0)
@@ -93,6 +96,6 @@ func (s *mapURLStorage) LoadByUserID(userID string) ([]URLEntity, error) {
 }
 
 // Ping implements URLStorager.Ping
-func (s *mapURLStorage) Ping() error {
+func (s *mapURLStorage) Ping(_ context.Context) error {
 	return nil
 }

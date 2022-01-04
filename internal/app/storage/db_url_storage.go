@@ -17,17 +17,18 @@ type dbURLStorage struct {
 
 var (
 	insertStmt         *sqlx.NamedStmt
+	batchInsertStmt    *sqlx.NamedStmt
 	getByURLIDStmt     *sqlx.Stmt
 	selectByUserIDStmt *sqlx.Stmt
 )
 
-func NewDBURLStorage(connectionString string) (*dbURLStorage, error) {
+func NewDBURLStorage(ctx context.Context, connectionString string) (*dbURLStorage, error) {
 	db, err := sqlx.Open("pgx", connectionString)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = createTables(db); err != nil {
+	if err = createTables(ctx, db); err != nil {
 		return nil, err
 	}
 
@@ -65,12 +66,19 @@ WITH new_link AS (
 		return err
 	}
 
+	if batchInsertStmt, err = db.PrepareNamed(`INSERT INTO urls(url_id, original_url, user_id) VALUES (:url_id, :original_url, :user_id)`); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (s *dbURLStorage) Store(urlEntity URLEntity) error {
-	row := insertStmt.QueryRow(&urlEntity)
+func (s *dbURLStorage) Store(ctx context.Context, urlEntity URLEntity) error {
+	// длительность таймаутов возможно нужно вынести в настройки. или в какие-то константы с понятными названиями и собранные плюс-минус в одном месте.
+	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
 
+	row := insertStmt.QueryRowContext(innerCtx, &urlEntity)
 	var urlID string
 	err := row.Scan(&urlID)
 	if err != nil {
@@ -84,18 +92,21 @@ func (s *dbURLStorage) Store(urlEntity URLEntity) error {
 
 func (s *dbURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntity) error {
 	// длительность таймаутов возможно нужно вынести в настройки. или в какие-то константы с понятными названиями и собранные плюс-минус в одном месте.
-	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 
-	tx, err := s.DB.BeginTxx(ctx, nil)
+	tx, err := s.DB.BeginTxx(innerCtx, nil)
 	if err != nil {
 		return err
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer tx.Rollback() //nolint:errcheck
 
-	txInsertStmt := tx.NamedStmtContext(ctx, insertStmt)
+	txInsertStmt := tx.NamedStmtContext(ctx, batchInsertStmt)
 	for _, entity := range entitiesBatch {
+		// TODO: тут нет проверки ошибки на нарушение уникальности оригинального урла и соответствующей обработки (выброса ErrURLExists)
+		// Поэтому при попытке сохранить дубликат ссылки весь батч просто упадет с ошибкой (но по ТЗ и не надо было обрабатывать).
+		// Если будет время - надо допилить.
 		if _, err = txInsertStmt.Exec(&entity); err != nil {
 			return err
 		}
@@ -135,11 +146,11 @@ func (s *dbURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntity
 //	return urlEntity.ID, nil
 //}
 
-func (s *dbURLStorage) Load(key string) (URLEntity, error) {
-	var entity URLEntity
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+func (s *dbURLStorage) Load(ctx context.Context, key string) (URLEntity, error) {
+	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
-	err := getByURLIDStmt.GetContext(ctx, &entity, key)
+	var entity URLEntity
+	err := getByURLIDStmt.GetContext(innerCtx, &entity, key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return URLEntity{}, ErrURLNotFound
@@ -149,22 +160,24 @@ func (s *dbURLStorage) Load(key string) (URLEntity, error) {
 	return entity, nil
 }
 
-func (s *dbURLStorage) LoadByUserID(userID string) ([]URLEntity, error) {
-	//query := `select url_id, original_url, user_id  from urls where user_id=$1`
-	var result []URLEntity
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+func (s *dbURLStorage) LoadByUserID(ctx context.Context, userID string) ([]URLEntity, error) {
+	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
-	if err := selectByUserIDStmt.SelectContext(ctx, &result, userID); err != nil {
+	var result []URLEntity
+	if err := selectByUserIDStmt.SelectContext(innerCtx, &result, userID); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *dbURLStorage) Ping() error {
-	return s.DB.Ping()
+func (s *dbURLStorage) Ping(ctx context.Context) error {
+	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
+
+	return s.DB.PingContext(innerCtx)
 }
 
-func createTables(db *sqlx.DB) error {
+func createTables(ctx context.Context, db *sqlx.DB) error {
 	//goland:noinspection SqlNoDataSourceInspection
 	createScript := `
 	CREATE TABLE IF NOT EXISTS urls
@@ -178,8 +191,8 @@ func createTables(db *sqlx.DB) error {
 		CONSTRAINT original_url_unique UNIQUE (original_url)
 	)
 	`
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
-	_, err := db.ExecContext(ctx, createScript)
+	_, err := db.ExecContext(innerCtx, createScript)
 	return err
 }

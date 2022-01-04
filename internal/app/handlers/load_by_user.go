@@ -28,7 +28,7 @@ func (s *Service) LoadByUserHandler() http.HandlerFunc {
 			}
 		}
 
-		urlEntities, err := s.Repository.LoadByUserID(userID)
+		urlEntities, err := s.Repository.LoadByUserID(r.Context(), userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
