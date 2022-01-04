@@ -6,13 +6,11 @@ import (
 	"errors"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
-	"math/rand"
 	"time"
 )
 
 type dbURLStorage struct {
-	DB       *sqlx.DB
-	keysRand rand.Rand
+	DB *sqlx.DB
 }
 
 var (
@@ -36,10 +34,7 @@ func NewDBURLStorage(ctx context.Context, connectionString string) (*dbURLStorag
 		return nil, err
 	}
 
-	source := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(source)
-
-	return &dbURLStorage{DB: db, keysRand: *r}, nil
+	return &dbURLStorage{DB: db}, nil
 }
 
 //goland:noinspection SqlNoDataSourceInspection,SqlResolve
