@@ -3,6 +3,8 @@
 package mocks
 
 import (
+	context "context"
+
 	mock "github.com/stretchr/testify/mock"
 	storage "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 )
@@ -77,6 +79,20 @@ func (_m *URLStorager) Store(urlEntity storage.URLEntity) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(storage.URLEntity) error); ok {
 		r0 = rf(urlEntity)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// StoreBatch provides a mock function with given fields: ctx, entitiesBatch
+func (_m *URLStorager) StoreBatch(ctx context.Context, entitiesBatch []storage.URLEntity) error {
+	ret := _m.Called(ctx, entitiesBatch)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, []storage.URLEntity) error); ok {
+		r0 = rf(ctx, entitiesBatch)
 	} else {
 		r0 = ret.Error(0)
 	}

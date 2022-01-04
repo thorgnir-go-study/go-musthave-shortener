@@ -68,6 +68,30 @@ func (s *dbURLStorage) Store(urlEntity URLEntity) error {
 	return nil
 }
 
+func (s *dbURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntity) error {
+	// длительность таймаутов возможно нужно вынести в настройки. или в какие-то константы с понятными названиями и собранные плюс-минус в одном месте.
+	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
+
+	tx, err := s.DB.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer tx.Rollback()
+
+	txInsertStmt := tx.NamedStmtContext(ctx, insertStmt)
+	for _, entity := range entitiesBatch {
+		if _, err = txInsertStmt.Exec(&entity); err != nil {
+			return err
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
 //func (s *dbURLStorage) Store(originalURL string, userID string) (string, error) {
 //	urlEntity := URLEntity{
 //		OriginalURL: originalURL,

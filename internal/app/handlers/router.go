@@ -21,7 +21,7 @@ func NewRouter(service *Service) chi.Router {
 	r.Use(middleware.Compress(5))
 	r.Use(middlewares.GzipRequestDecompressor)
 
-	ca = cookieauth.New([]byte("secret"), "UserId")
+	ca = cookieauth.New([]byte(service.Config.AuthSecretKey), "UserId")
 
 	r.Post("/", service.ShortenURLHandler())
 	r.Get("/{urlID}", service.ExpandURLHandler())

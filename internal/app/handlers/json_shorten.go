@@ -13,11 +13,11 @@ import (
 	"net/url"
 )
 
-type request struct {
+type jsonShortenRequest struct {
 	URL string `json:"url"`
 }
 
-type response struct {
+type jsonShortenResponse struct {
 	Result string `json:"result"`
 }
 
@@ -30,7 +30,7 @@ func (s *Service) JSONShortenURLHandler() http.HandlerFunc {
 			return
 		}
 
-		var req request
+		var req jsonShortenRequest
 
 		if err := json.Unmarshal(bodyContent, &req); err != nil {
 			http.Error(w, "Invalid json", http.StatusBadRequest)
@@ -69,7 +69,7 @@ func (s *Service) JSONShortenURLHandler() http.HandlerFunc {
 			return
 		}
 
-		responseObj := &response{Result: fmt.Sprintf("%s/%s", s.Config.BaseURL, urlEntity.ID)}
+		responseObj := &jsonShortenResponse{Result: fmt.Sprintf("%s/%s", s.Config.BaseURL, urlEntity.ID)}
 		serializedResp, err := json.Marshal(responseObj)
 		if err != nil {
 			http.Error(w, "Can't serialize response", http.StatusInternalServerError)

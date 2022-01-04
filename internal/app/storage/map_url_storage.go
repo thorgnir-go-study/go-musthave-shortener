@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"log"
 	"sync"
 )
@@ -55,6 +56,15 @@ func (s *mapURLStorage) Store(urlEntity URLEntity) error {
 		}
 	}
 
+	return nil
+}
+
+func (s *mapURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntity) error {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+	for _, urlEntity := range entitiesBatch {
+		s.m[urlEntity.ID] = urlEntity
+	}
 	return nil
 }
 
