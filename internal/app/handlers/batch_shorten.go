@@ -21,16 +21,14 @@ type batchShortenRequestEntity struct {
 }
 type batchShortenResponseEntity struct {
 	CorrelationID string `json:"correlation_id"`
-	ShortUrl      string `json:"short_url"`
+	ShortURL      string `json:"short_url"`
 }
 
 type batchShortenRequest []batchShortenRequestEntity
 
 func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		bodyContent, err := io.ReadAll(r.Body)
-		fmt.Printf("request: %s", string(bodyContent))
 		defer r.Body.Close()
 		if err != nil {
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)
@@ -54,9 +52,8 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 			http.Error(w, "Invalid json", http.StatusBadRequest)
 		}
 
-		if isValid, invalidUrl := isValidRequest(req); !isValid {
-			fmt.Println("invalid URL", invalidUrl)
-			http.Error(w, "invalid url"+invalidUrl, http.StatusBadRequest)
+		if isValid, invalidURL := isValidRequest(req); !isValid {
+			http.Error(w, "invalid url"+invalidURL, http.StatusBadRequest)
 			return
 		}
 
@@ -80,7 +77,7 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 			}
 			resp[idx] = batchShortenResponseEntity{
 				CorrelationID: reqEntity.CorrelationID,
-				ShortUrl:      fmt.Sprintf("%s/%s", s.Config.BaseURL, id),
+				ShortURL:      fmt.Sprintf("%s/%s", s.Config.BaseURL, id),
 			}
 		}
 
@@ -105,9 +102,9 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 	}
 }
 
-func isValidRequest(req batchShortenRequest) (isValid bool, firstInvalidUrl string) {
+func isValidRequest(req batchShortenRequest) (isValid bool, firstInvalidURL string) {
 	for _, entity := range req {
-		if !isValidUrl(entity.OriginalURL) {
+		if !isValidURL(entity.OriginalURL) {
 			return false, entity.OriginalURL
 		}
 	}
@@ -115,7 +112,7 @@ func isValidRequest(req batchShortenRequest) (isValid bool, firstInvalidUrl stri
 	return true, ""
 }
 
-func isValidUrl(input string) bool {
+func isValidURL(input string) bool {
 	u, err := url.ParseRequestURI(input)
 	if err != nil {
 		return false
