@@ -55,6 +55,7 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 		}
 
 		if isValid, invalidUrl := isValidRequest(req); !isValid {
+			fmt.Println("invalid URL", invalidUrl)
 			http.Error(w, "invalid url"+invalidUrl, http.StatusBadRequest)
 			return
 		}

@@ -15,7 +15,7 @@ import (
 	"testing"
 )
 
-func Test_JSONShortenURLHandler(t *testing.T) {
+func Test_BatchShortenURLHandler(t *testing.T) {
 	type request struct {
 		url    string
 		method string
@@ -35,32 +35,39 @@ func Test_JSONShortenURLHandler(t *testing.T) {
 		idGenerator *shortenerMocks.URLIDGenerator
 	}{
 		{
-			name: "should shorten google",
+			name: "should shorten several urls",
 			request: request{
-				url:    "/api/shorten",
+				url:    "/api/shorten/batch",
 				method: http.MethodPost,
-				body:   `{"url": "http://google.com"}`,
+				body: `[
+{"original_url": "http://google.com", "correlation_id": "1"},
+{"original_url": "http://yandex.ru", "correlation_id": "2"}
+]`,
 			},
 			want: want{
 				contentType: "application/json; charset=utf-8",
 				statusCode:  http.StatusCreated,
-				body:        `{"result":"http://localhost:8080/shortGoogle"}`,
+				body: `[
+{"short_url":"http://localhost:8080/shortGoogle", "correlation_id": "1"},
+{"short_url":"http://localhost:8080/shortYandex", "correlation_id": "2"}
+]`,
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Store", mock.Anything).Return(nil).Once()
+				urlStorage.On("StoreBatch", mock.Anything, mock.Anything).Return(nil).Once()
 				return urlStorage
 			}(),
 			idGenerator: func() *shortenerMocks.URLIDGenerator {
 				gen := new(shortenerMocks.URLIDGenerator)
 				gen.On("GenerateURLID", "http://google.com").Return("shortGoogle").Once()
+				gen.On("GenerateURLID", "http://yandex.ru").Return("shortYandex").Once()
 				return gen
 			}(),
 		},
 		{
 			name: "should fail on empty body",
 			request: request{
-				url:    "/api/shorten",
+				url:    "/api/shorten/batch",
 				method: http.MethodPost,
 				body:   "",
 			},
@@ -73,7 +80,10 @@ func Test_JSONShortenURLHandler(t *testing.T) {
 			request: request{
 				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   `{"url": "/somerelativeurl"}`,
+				body: `[
+{"original_url": "http://google.com", "correlation_id": "1"},
+{"original_url": "/blabla", "correlation_id": "2"}
+]`,
 			},
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -84,7 +94,10 @@ func Test_JSONShortenURLHandler(t *testing.T) {
 			request: request{
 				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   `{"url": "some text"}`,
+				body: `[
+{"original_url": "http://google.com", "correlation_id": "1"},
+{"original_url": "some text", "correlation_id": "2"}
+]`,
 			},
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -93,21 +106,25 @@ func Test_JSONShortenURLHandler(t *testing.T) {
 		{
 			name: "should respond 500 on url storage error",
 			request: request{
-				url:    "/api/shorten",
+				url:    "/api/shorten/batch",
 				method: http.MethodPost,
-				body:   `{"url": "http://google.com"}`,
+				body: `[
+{"original_url": "http://google.com", "correlation_id": "1"},
+{"original_url": "http://yandex.ru", "correlation_id": "2"}
+]`,
 			},
 			want: want{
 				statusCode: http.StatusInternalServerError,
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Store", mock.Anything).Return("", errors.New("some error")).Once()
+				urlStorage.On("StoreBatch", mock.Anything, mock.Anything).Return(errors.New("some error")).Once()
 				return urlStorage
 			}(),
 			idGenerator: func() *shortenerMocks.URLIDGenerator {
 				gen := new(shortenerMocks.URLIDGenerator)
 				gen.On("GenerateURLID", "http://google.com").Return("shortGoogle").Once()
+				gen.On("GenerateURLID", "http://yandex.ru").Return("shortYandex").Once()
 				return gen
 			}(),
 		},
