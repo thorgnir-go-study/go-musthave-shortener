@@ -10,8 +10,8 @@ import (
 )
 
 type URLStoragePersister interface {
-	Store(id string, url string) error
-	Load(dest map[string]string) error
+	Store(entity URLEntity) error
+	Load(dest map[string]URLEntity) error
 }
 
 type plainTextFileURLStoragePersister struct {
@@ -25,10 +25,10 @@ func createNewPlainTextFileURLStoragePersister(filename string) *plainTextFileUR
 	}
 }
 
-func (p *plainTextFileURLStoragePersister) Store(id string, url string) error {
-// тут возможны разные подходы, в зависимости от предполагаемой нагрузки
-// если предположить, что запись будет частой, то имеет смысл держать файл открытым и в структуру добавить writer
-// текущая реализация для варианта "пишем редко"
+func (p *plainTextFileURLStoragePersister) Store(entity URLEntity) error {
+	// тут возможны разные подходы, в зависимости от предполагаемой нагрузки
+	// если предположить, что запись будет частой, то имеет смысл держать файл открытым и в структуру добавить writer
+	// текущая реализация для варианта "пишем редко"
 	p.mx.Lock()
 	defer p.mx.Unlock()
 	file, err := os.OpenFile(p.filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0777)
@@ -38,7 +38,7 @@ func (p *plainTextFileURLStoragePersister) Store(id string, url string) error {
 	defer file.Close()
 
 	w := bufio.NewWriter(file)
-	_, err = fmt.Fprintf(w, "%s\t%s\n", id, url)
+	_, err = fmt.Fprintf(w, "%s\t%s\t%s\n", entity.ID, entity.UserID, entity.OriginalURL)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func (p *plainTextFileURLStoragePersister) Store(id string, url string) error {
 	return nil
 }
 
-func (p *plainTextFileURLStoragePersister) Load(dest map[string]string) error {
+func (p *plainTextFileURLStoragePersister) Load(dest map[string]URLEntity) error {
 	p.mx.Lock()
 	defer p.mx.Unlock()
 	file, err := os.Open(p.filename)
@@ -63,10 +63,14 @@ func (p *plainTextFileURLStoragePersister) Load(dest map[string]string) error {
 	for s.Scan() {
 		dataStr := s.Text()
 		splittedData := strings.Split(dataStr, "\t")
-		if len(splittedData) != 2 {
+		if len(splittedData) != 3 {
 			return errors.New("invalid string in url storage file")
 		}
-		dest[splittedData[0]] = splittedData[1]
+		dest[splittedData[0]] = URLEntity{
+			ID:          splittedData[0],
+			OriginalURL: splittedData[2],
+			UserID:      splittedData[1],
+		}
 	}
 
 	if err := s.Err(); err != nil {

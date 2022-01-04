@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"io"
 	"log"
@@ -10,7 +13,7 @@ import (
 )
 
 //ShortenURLHandler обрабатывает запросы на развертывание сокращенных ссылок
-func ShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
+func (s *Service) ShortenURLHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
 
@@ -36,14 +39,32 @@ func ShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 			return
 		}
 
-		key, err := s.Store(u.String())
+		userID, err := ca.GetUserID(r)
+		if err != nil {
+			if errors.Is(err, cookieauth.ErrNoTokenFound) || errors.Is(err, cookieauth.ErrInvalidToken) {
+				userID = uuid.NewString()
+				ca.SetUserIDCookie(w, userID)
+			} else {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		id := s.IDGenerator.GenerateURLID(u.String())
+		urlEntity := storage.URLEntity{
+			ID:          id,
+			OriginalURL: u.String(),
+			UserID:      userID,
+		}
+		err = s.Repository.Store(urlEntity)
 		if err != nil {
 			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
 			return
 		}
+
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", baseURL, key)))
+		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", s.Config.BaseURL, urlEntity.ID)))
 		if err != nil {
 			log.Printf("Write failed: %v", err)
 		}

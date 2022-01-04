@@ -1,29 +1,23 @@
 package storage
 
 import (
+	"context"
 	"log"
-	"math/rand"
-	"strconv"
 	"sync"
-	"time"
 )
 
 type mapURLStorage struct {
 	mx        sync.RWMutex
-	m         map[string]string
-	keysRand  rand.Rand
+	m         map[string]URLEntity
 	persister URLStoragePersister
 }
 
 type MapURLStorageOption func(*mapURLStorage) error
 
-// CreateMapURLStorage создает реализацию хранилища ссылок в памяти, на основе map
-func CreateMapURLStorage(opts ...MapURLStorageOption) (*mapURLStorage, error) {
-	source := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(source)
+// NewMapURLStorage создает реализацию хранилища ссылок в памяти, на основе map
+func NewMapURLStorage(opts ...MapURLStorageOption) (*mapURLStorage, error) {
 	storage := &mapURLStorage{
-		m:        make(map[string]string),
-		keysRand: *r,
+		m: make(map[string]URLEntity),
 	}
 
 	for _, opt := range opts {
@@ -36,6 +30,7 @@ func CreateMapURLStorage(opts ...MapURLStorageOption) (*mapURLStorage, error) {
 	return storage, nil
 }
 
+// WithFilePersistance позволяет сохранять в файле состояние хранилища, и при создании хранилища восстанавливать состояние из файла.
 func WithFilePersistance(filename string) MapURLStorageOption {
 	return func(storage *mapURLStorage) error {
 		persister := createNewPlainTextFileURLStoragePersister(filename)
@@ -48,34 +43,56 @@ func WithFilePersistance(filename string) MapURLStorageOption {
 	}
 }
 
-// Store сохраненяет ссылку в хранилище, возвращает идентификатор сохраненной ссылки
-func (s *mapURLStorage) Store(url string) (key string, err error) {
+// Store implements URLStorager.Store
+func (s *mapURLStorage) Store(urlEntity URLEntity) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
-	var id string
-	for used := true; used; _, used = s.m[id] {
-		id = strconv.FormatUint(s.keysRand.Uint64(), 36)
-	}
-	s.m[id] = url
+	s.m[urlEntity.ID] = urlEntity
 
 	if s.persister != nil {
-		err := s.persister.Store(id, url)
-		if err != nil {
+		if err := s.persister.Store(urlEntity); err != nil {
 			log.Println(err)
-			return id, err
+			return err
 		}
 	}
 
-	return id, nil
+	return nil
 }
 
-// Load возвращает сохраненную ссылку по идентификатору. Возвращает ссылку, если она найдена, в противном случае ErrURLNotFound
-func (s *mapURLStorage) Load(key string) (url string, err error) {
+func (s *mapURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntity) error {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+	for _, urlEntity := range entitiesBatch {
+		s.m[urlEntity.ID] = urlEntity
+	}
+	return nil
+}
+
+// Load implements URLStorager.Load
+func (s *mapURLStorage) Load(key string) (urlEntity URLEntity, err error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 	value, ok := s.m[key]
 	if !ok {
-		return "", ErrURLNotFound
+		return URLEntity{}, ErrURLNotFound
 	}
 	return value, nil
+}
+
+// LoadByUserID implements URLStorager.LoadByUserID
+func (s *mapURLStorage) LoadByUserID(userID string) ([]URLEntity, error) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+	entities := make([]URLEntity, 0)
+	for _, entity := range s.m {
+		if entity.UserID == userID {
+			entities = append(entities, entity)
+		}
+	}
+	return entities, nil
+}
+
+// Ping implements URLStorager.Ping
+func (s *mapURLStorage) Ping() error {
+	return nil
 }

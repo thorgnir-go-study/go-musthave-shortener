@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"io"
 	"log"
@@ -10,26 +13,24 @@ import (
 	"net/url"
 )
 
-type request struct {
+type jsonShortenRequest struct {
 	URL string `json:"url"`
 }
 
-type response struct {
+type jsonShortenResponse struct {
 	Result string `json:"result"`
 }
 
-func JSONShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
+func (s *Service) JSONShortenURLHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
-
 		defer r.Body.Close()
-
 		if err != nil {
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)
 			return
 		}
 
-		var req request
+		var req jsonShortenRequest
 
 		if err := json.Unmarshal(bodyContent, &req); err != nil {
 			http.Error(w, "Invalid json", http.StatusBadRequest)
@@ -46,13 +47,29 @@ func JSONShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFun
 			return
 		}
 
-		key, err := s.Store(u.String())
+		userID, err := ca.GetUserID(r)
+		if err != nil {
+			if errors.Is(err, cookieauth.ErrNoTokenFound) || errors.Is(err, cookieauth.ErrInvalidToken) {
+				userID = uuid.NewString()
+				ca.SetUserIDCookie(w, userID)
+			} else {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+		id := s.IDGenerator.GenerateURLID(u.String())
+		urlEntity := storage.URLEntity{
+			ID:          id,
+			OriginalURL: u.String(),
+			UserID:      userID,
+		}
+		err = s.Repository.Store(urlEntity)
 		if err != nil {
 			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
 			return
 		}
 
-		responseObj := &response{Result: fmt.Sprintf("%s/%s", baseURL, key)}
+		responseObj := &jsonShortenResponse{Result: fmt.Sprintf("%s/%s", s.Config.BaseURL, urlEntity.ID)}
 		serializedResp, err := json.Marshal(responseObj)
 		if err != nil {
 			http.Error(w, "Can't serialize response", http.StatusInternalServerError)

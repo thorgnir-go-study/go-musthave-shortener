@@ -15,7 +15,7 @@ import (
 	"testing"
 )
 
-func Test_ShortenURLHandler(t *testing.T) {
+func Test_BatchShortenURLHandler(t *testing.T) {
 	type request struct {
 		url    string
 		method string
@@ -26,6 +26,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 		statusCode  int
 		body        string
 	}
+
 	tests := []struct {
 		name        string
 		request     request
@@ -34,32 +35,39 @@ func Test_ShortenURLHandler(t *testing.T) {
 		idGenerator *shortenerMocks.URLIDGenerator
 	}{
 		{
-			name: "should shorten google",
+			name: "should shorten several urls",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten/batch",
 				method: http.MethodPost,
-				body:   "http://google.com",
+				body: `[
+{"original_url": "http://google.com", "correlation_id": "1"},
+{"original_url": "http://yandex.ru", "correlation_id": "2"}
+]`,
 			},
 			want: want{
-				contentType: "text/plain; charset=utf-8",
+				contentType: "application/json; charset=utf-8",
 				statusCode:  http.StatusCreated,
-				body:        "http://localhost:8080/shortGoogle",
+				body: `[
+{"short_url":"http://localhost:8080/shortGoogle", "correlation_id": "1"},
+{"short_url":"http://localhost:8080/shortYandex", "correlation_id": "2"}
+]`,
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Store", mock.Anything).Return(nil).Once()
+				urlStorage.On("StoreBatch", mock.Anything, mock.Anything).Return(nil).Once()
 				return urlStorage
 			}(),
 			idGenerator: func() *shortenerMocks.URLIDGenerator {
 				gen := new(shortenerMocks.URLIDGenerator)
 				gen.On("GenerateURLID", "http://google.com").Return("shortGoogle").Once()
+				gen.On("GenerateURLID", "http://yandex.ru").Return("shortYandex").Once()
 				return gen
 			}(),
 		},
 		{
 			name: "should fail on empty body",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten/batch",
 				method: http.MethodPost,
 				body:   "",
 			},
@@ -70,9 +78,12 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should fail on relative url",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "/somerelativeurl",
+				body: `[
+{"original_url": "http://google.com", "correlation_id": "1"},
+{"original_url": "/blabla", "correlation_id": "2"}
+]`,
 			},
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -81,9 +92,12 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should fail on invalid url",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "some text",
+				body: `[
+{"original_url": "http://google.com", "correlation_id": "1"},
+{"original_url": "some text", "correlation_id": "2"}
+]`,
 			},
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -92,27 +106,31 @@ func Test_ShortenURLHandler(t *testing.T) {
 		{
 			name: "should respond 500 on url storage error",
 			request: request{
-				url:    "/",
+				url:    "/api/shorten/batch",
 				method: http.MethodPost,
-				body:   "http://google.com",
+				body: `[
+{"original_url": "http://google.com", "correlation_id": "1"},
+{"original_url": "http://yandex.ru", "correlation_id": "2"}
+]`,
 			},
 			want: want{
 				statusCode: http.StatusInternalServerError,
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Store", mock.Anything).Return("", errors.New("some error")).Once()
+				urlStorage.On("StoreBatch", mock.Anything, mock.Anything).Return(errors.New("some error")).Once()
 				return urlStorage
 			}(),
 			idGenerator: func() *shortenerMocks.URLIDGenerator {
 				gen := new(shortenerMocks.URLIDGenerator)
 				gen.On("GenerateURLID", "http://google.com").Return("shortGoogle").Once()
+				gen.On("GenerateURLID", "http://yandex.ru").Return("shortYandex").Once()
 				return gen
 			}(),
 		},
 	}
-
 	baseURL := "http://localhost:8080"
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			st := tt.storage
@@ -139,7 +157,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 				defer res.Body.Close()
 				body, err := io.ReadAll(res.Body)
 				require.NoError(t, err)
-				assert.Equal(t, tt.want.body, string(body))
+				assert.JSONEq(t, tt.want.body, string(body))
 			}
 			st.AssertExpectations(t)
 		})
