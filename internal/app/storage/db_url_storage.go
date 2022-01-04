@@ -47,7 +47,7 @@ func prepareStatements(db *sqlx.DB) error {
 	if insertStmt, err = db.PrepareNamed(`
 WITH new_link AS (
     INSERT INTO urls(url_id, original_url, user_id) VALUES (:url_id, :original_url, :user_id)
-    ON CONFLICT(original_url_unique) DO NOTHING
+    ON CONFLICT(original_url) DO NOTHING
     RETURNING url_id
 ) SELECT COALESCE(
     (SELECT url_id FROM new_link),
