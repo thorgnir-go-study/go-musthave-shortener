@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"log"
 	"net/http"
 )
@@ -16,7 +15,7 @@ type responseEntity struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func LoadByUserHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
+func (s *Service) LoadByUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := ca.GetUserID(r)
 		if err != nil {
@@ -29,7 +28,7 @@ func LoadByUserHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 			}
 		}
 
-		urlEntities, err := s.LoadByUserID(userID)
+		urlEntities, err := s.Repository.LoadByUserID(userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -42,7 +41,7 @@ func LoadByUserHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 		respEntities := make([]responseEntity, len(urlEntities))
 		for idx := range urlEntities {
 			respEntities[idx] = responseEntity{
-				ShortURL:    fmt.Sprintf("%s/%s", baseURL, urlEntities[idx].ID),
+				ShortURL:    fmt.Sprintf("%s/%s", s.Config.BaseURL, urlEntities[idx].ID),
 				OriginalURL: urlEntities[idx].OriginalURL,
 			}
 		}

@@ -1,7 +1,7 @@
 package storage
 
 type URLEntity struct {
-	ID          string
-	OriginalURL string
-	UserID      string
+	ID          string `db:"url_id"`
+	OriginalURL string `db:"original_url"`
+	UserID      string `db:"user_id"`
 }

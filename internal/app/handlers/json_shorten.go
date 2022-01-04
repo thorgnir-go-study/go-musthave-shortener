@@ -21,7 +21,7 @@ type response struct {
 	Result string `json:"result"`
 }
 
-func JSONShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
+func (s *Service) JSONShortenURLHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
 		defer r.Body.Close()
@@ -57,14 +57,19 @@ func JSONShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFun
 				return
 			}
 		}
-
-		key, err := s.Store(u.String(), userID)
+		id := s.IDGenerator.GenerateURLID(u.String())
+		urlEntity := storage.URLEntity{
+			ID:          id,
+			OriginalURL: u.String(),
+			UserID:      userID,
+		}
+		err = s.Repository.Store(urlEntity)
 		if err != nil {
 			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
 			return
 		}
 
-		responseObj := &response{Result: fmt.Sprintf("%s/%s", baseURL, key)}
+		responseObj := &response{Result: fmt.Sprintf("%s/%s", s.Config.BaseURL, urlEntity.ID)}
 		serializedResp, err := json.Marshal(responseObj)
 		if err != nil {
 			http.Error(w, "Can't serialize response", http.StatusInternalServerError)

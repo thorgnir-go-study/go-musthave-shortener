@@ -5,6 +5,7 @@ import (
 	"github.com/caarlos0/env/v6"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/shortener"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"log"
 )
@@ -23,14 +24,14 @@ func init() {
 	databaseDsnFlag = flag.String("d", "", "Database DSN. If not set in CLI or env variable DATABASE_DSN db is not used")
 }
 
-func createStorage(cfg config.Config) (storage.URLStorage, error) {
+func createRepository(cfg config.Config) (storage.URLStorager, error) {
 	if cfg.DatabaseDSN != "" {
 		return createDBStorage(cfg)
 	}
 	return createInMemoryStorage(cfg)
 }
 
-func createInMemoryStorage(cfg config.Config) (storage.URLStorage, error) {
+func createInMemoryStorage(cfg config.Config) (storage.URLStorager, error) {
 	var options []storage.MapURLStorageOption
 	if cfg.StorageFilePath != "" {
 		options = append(options, storage.WithFilePersistance(cfg.StorageFilePath))
@@ -43,7 +44,7 @@ func createInMemoryStorage(cfg config.Config) (storage.URLStorage, error) {
 	return urlStorage, nil
 }
 
-func createDBStorage(cfg config.Config) (storage.URLStorage, error) {
+func createDBStorage(cfg config.Config) (storage.URLStorager, error) {
 	urlStorage, err := storage.NewDBURLStorage(cfg.DatabaseDSN)
 	if err != nil {
 		return nil, err
@@ -75,10 +76,12 @@ func main() {
 		cfg.DatabaseDSN = *databaseDsnFlag
 	}
 
-	urlStorage, err := createStorage(cfg)
+	urlStorage, err := createRepository(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	app.StartURLShortenerServer(cfg, urlStorage)
+	idGenerator := shortener.NewRandomStringURLIDGenerator(10)
+
+	app.StartURLShortenerServer(cfg, urlStorage, idGenerator)
 }

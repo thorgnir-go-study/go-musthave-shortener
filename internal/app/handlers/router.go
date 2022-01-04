@@ -3,17 +3,15 @@ package handlers
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
 	"time"
 )
 
 var ca *cookieauth.CookieAuth
 
 //NewRouter возращает настроенный для сокращения ссылок chi.Router
-func NewRouter(storage storage.URLStorage, cfg config.Config) chi.Router {
+func NewRouter(service *Service) chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -25,11 +23,11 @@ func NewRouter(storage storage.URLStorage, cfg config.Config) chi.Router {
 
 	ca = cookieauth.New([]byte("secret"), "UserId")
 
-	r.Post("/", ShortenURLHandler(storage, cfg.BaseURL))
-	r.Get("/{urlID}", ExpandURLHandler(storage))
-	r.Post("/api/shorten", JSONShortenURLHandler(storage, cfg.BaseURL))
-	r.Get("/user/urls", LoadByUserHandler(storage, cfg.BaseURL))
-	r.Get("/ping", PingHandler(storage))
+	r.Post("/", service.ShortenURLHandler())
+	r.Get("/{urlID}", service.ExpandURLHandler())
+	r.Post("/api/shorten", service.JSONShortenURLHandler())
+	r.Get("/user/urls", service.LoadByUserHandler())
+	r.Get("/ping", service.PingHandler())
 
 	return r
 }

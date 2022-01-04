@@ -8,12 +8,12 @@ import (
 )
 
 // ExpandURLHandler обрабатывает запросы на сокращение ссылок
-func ExpandURLHandler(s storage.URLStorage) http.HandlerFunc {
+func (s *Service) ExpandURLHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		urlID := chi.URLParam(r, "urlID")
 
-		u, err := s.Load(urlID)
+		u, err := s.Repository.Load(urlID)
 		if errors.Is(err, storage.ErrURLNotFound) {
 			http.NotFound(w, r)
 			return

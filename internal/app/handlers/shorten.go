@@ -13,7 +13,7 @@ import (
 )
 
 //ShortenURLHandler обрабатывает запросы на развертывание сокращенных ссылок
-func ShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
+func (s *Service) ShortenURLHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
 
@@ -50,14 +50,24 @@ func ShortenURLHandler(s storage.URLStorage, baseURL string) http.HandlerFunc {
 			}
 		}
 
-		key, err := s.Store(u.String(), userID)
+		id := s.IDGenerator.GenerateURLID(u.String())
+		urlEntity := storage.URLEntity{
+			ID:          id,
+			OriginalURL: u.String(),
+			UserID:      userID,
+		}
+		err = s.Repository.Store(urlEntity)
+		if err != nil {
+			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
+			return
+		}
 		if err != nil {
 			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", baseURL, key)))
+		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", s.Config.BaseURL, urlEntity.ID)))
 		if err != nil {
 			log.Printf("Write failed: %v", err)
 		}
