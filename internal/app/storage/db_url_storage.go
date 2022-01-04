@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"math/rand"
@@ -45,7 +44,16 @@ func NewDBURLStorage(connectionString string) (*dbURLStorage, error) {
 //goland:noinspection SqlNoDataSourceInspection,SqlResolve
 func prepareStatements(db *sqlx.DB) error {
 	var err error
-	if insertStmt, err = db.PrepareNamed(`insert into urls(url_id, original_url, user_id) values(:url_id, :original_url, :user_id)`); err != nil {
+	if insertStmt, err = db.PrepareNamed(`
+WITH new_link AS (
+    INSERT INTO urls(url_id, original_url, user_id) VALUES (:url_id, :original_url, :user_id)
+    ON CONFLICT(original_url_unique) DO NOTHING
+    RETURNING url_id
+) SELECT COALESCE(
+    (SELECT url_id FROM new_link),
+    (SELECT url_id FROM urls WHERE original_url = :original_url)
+)
+`); err != nil {
 		return err
 	}
 
@@ -61,9 +69,15 @@ func prepareStatements(db *sqlx.DB) error {
 }
 
 func (s *dbURLStorage) Store(urlEntity URLEntity) error {
-	if _, err := insertStmt.Exec(&urlEntity); err != nil {
-		fmt.Println(err)
+	row := insertStmt.QueryRow(&urlEntity)
+
+	var urlID string
+	err := row.Scan(&urlID)
+	if err != nil {
 		return err
+	}
+	if urlID != urlEntity.ID {
+		return NewErrURLExists(urlID)
 	}
 	return nil
 }
@@ -78,7 +92,7 @@ func (s *dbURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntity
 		return err
 	}
 	//goland:noinspection GoUnhandledErrorResult
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint:errcheck
 
 	txInsertStmt := tx.NamedStmtContext(ctx, insertStmt)
 	for _, entity := range entitiesBatch {
@@ -160,7 +174,8 @@ func createTables(db *sqlx.DB) error {
 		original_url character varying  NOT NULL,
 		user_id character varying NOT NULL,
 		CONSTRAINT urls_pkey PRIMARY KEY (id),
-		CONSTRAINT url_id_unique UNIQUE (url_id)
+		CONSTRAINT url_id_unique UNIQUE (url_id),
+		CONSTRAINT original_url_unique UNIQUE (original_url)
 	)
 	`
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

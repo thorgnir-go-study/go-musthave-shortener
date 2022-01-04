@@ -63,20 +63,26 @@ func (s *Service) JSONShortenURLHandler() http.HandlerFunc {
 			OriginalURL: u.String(),
 			UserID:      userID,
 		}
+		status := http.StatusCreated
 		err = s.Repository.Store(urlEntity)
 		if err != nil {
-			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
-			return
+			var errExists *storage.ErrURLExists
+			if !errors.As(err, &errExists) {
+				http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
+				return
+			}
+			id = errExists.ID
+			status = http.StatusConflict
 		}
 
-		responseObj := &jsonShortenResponse{Result: fmt.Sprintf("%s/%s", s.Config.BaseURL, urlEntity.ID)}
+		responseObj := &jsonShortenResponse{Result: fmt.Sprintf("%s/%s", s.Config.BaseURL, id)}
 		serializedResp, err := json.Marshal(responseObj)
 		if err != nil {
 			http.Error(w, "Can't serialize response", http.StatusInternalServerError)
 		}
 
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(status)
 
 		_, err = w.Write(serializedResp)
 		if err != nil {

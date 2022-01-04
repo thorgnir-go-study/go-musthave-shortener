@@ -56,15 +56,21 @@ func (s *Service) ShortenURLHandler() http.HandlerFunc {
 			OriginalURL: u.String(),
 			UserID:      userID,
 		}
+		status := http.StatusCreated
 		err = s.Repository.Store(urlEntity)
 		if err != nil {
-			http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
-			return
+			var errExists *storage.ErrURLExists
+			if !errors.As(err, &errExists) {
+				http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
+				return
+			}
+			id = errExists.ID
+			status = http.StatusConflict
 		}
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", s.Config.BaseURL, urlEntity.ID)))
+		w.WriteHeader(status)
+		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", s.Config.BaseURL, id)))
 		if err != nil {
 			log.Printf("Write failed: %v", err)
 		}
