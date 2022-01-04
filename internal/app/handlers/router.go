@@ -24,11 +24,11 @@ func NewRouter(service *Service) chi.Router {
 	ca = cookieauth.New([]byte(service.Config.AuthSecretKey), "UserId")
 
 	r.Post("/", service.ShortenURLHandler())
-	r.Get("/{urlID}", service.ExpandURLHandler())
 	r.Post("/api/shorten", service.JSONShortenURLHandler())
+	r.Post("/api/shorten/batch", service.BatchShortenURLHandler())
+	r.Get("/{urlID}", service.ExpandURLHandler())
 	r.Get("/user/urls", service.LoadByUserHandler())
 	r.Get("/ping", service.PingHandler())
-	r.Post("/api/shorten/batch", service.BatchShortenURLHandler())
 
 	return r
 }

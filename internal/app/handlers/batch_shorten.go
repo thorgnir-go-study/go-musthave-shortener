@@ -30,6 +30,7 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		bodyContent, err := io.ReadAll(r.Body)
+		fmt.Printf("request: %s", string(bodyContent))
 		defer r.Body.Close()
 		if err != nil {
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)
@@ -61,11 +62,10 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), time.Minute)
 		defer cancel()
 		batch := storage.NewBatchService(100, s.Repository)
-		//goland:noinspection GoUnhandledErrorResult
-		defer batch.Flush(ctx)
+
 		resp := make([]batchShortenResponseEntity, len(req))
 
-		for _, reqEntity := range req {
+		for idx, reqEntity := range req {
 			id := s.IDGenerator.GenerateURLID(reqEntity.OriginalURL)
 			entity := storage.URLEntity{
 				ID:          id,
@@ -77,10 +77,16 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 				return
 			}
-			resp = append(resp, batchShortenResponseEntity{
+			resp[idx] = batchShortenResponseEntity{
 				CorrelationID: reqEntity.CorrelationID,
 				ShortUrl:      fmt.Sprintf("%s/%s", s.Config.BaseURL, id),
-			})
+			}
+		}
+
+		err = batch.Flush(ctx)
+		if err != nil {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
 		}
 
 		serializedResp, err := json.Marshal(resp)
