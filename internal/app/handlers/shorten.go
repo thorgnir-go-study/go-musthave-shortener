@@ -3,8 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares/cookieauth"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository"
 	"io"
 	"log"
@@ -39,15 +38,10 @@ func (s *Service) ShortenURLHandler() http.HandlerFunc {
 			return
 		}
 
-		userID, err := ca.GetUserID(r)
+		userID, err := cookieauth.FromContext(r.Context())
 		if err != nil {
-			if errors.Is(err, cookieauth.ErrNoTokenFound) || errors.Is(err, cookieauth.ErrInvalidToken) {
-				userID = uuid.NewString()
-				ca.SetUserIDCookie(w, userID)
-			} else {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
 		}
 
 		id := s.IDGenerator.GenerateURLID(u.String())

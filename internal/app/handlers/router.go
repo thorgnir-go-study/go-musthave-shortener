@@ -3,8 +3,8 @@ package handlers
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares/cookieauth"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares/request-decompress"
 	"time"
 )
 
@@ -19,9 +19,11 @@ func NewRouter(service *Service) chi.Router {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(10 * time.Second))
 	r.Use(middleware.Compress(5))
-	r.Use(middlewares.GzipRequestDecompressor)
+	r.Use(request_decompress.GzipRequestDecompressor)
 
-	ca = cookieauth.New([]byte(service.Config.AuthSecretKey), "UserId")
+	ca = cookieauth.New([]byte(service.Config.AuthSecretKey))
+	r.Use(cookieauth.Verifier(ca))
+	r.Use(cookieauth.Authenticator(ca))
 
 	r.Post("/", service.ShortenURLHandler())
 	r.Post("/api/shorten", service.JSONShortenURLHandler())
