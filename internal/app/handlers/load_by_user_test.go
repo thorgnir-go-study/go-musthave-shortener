@@ -93,7 +93,7 @@ var _ = Describe("LoadByUser", func() {
 			})
 
 			It("should return urls list for specified user", func() {
-				var expectedJson = `[
+				var expectedJSON = `[
 {
 "short_url": "http://localhost:8080/123", 
 "original_url": "http://google.com"
@@ -108,7 +108,7 @@ var _ = Describe("LoadByUser", func() {
 				body, err := io.ReadAll(res.Body)
 				defer res.Body.Close()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(body).To(MatchJSON(expectedJson))
+				Expect(body).To(MatchJSON(expectedJSON))
 			})
 		})
 
