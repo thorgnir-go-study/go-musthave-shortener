@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository"
-	storageMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository/mocks"
+	repositoryMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository/mocks"
 	shortenerMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/shortener/mocks"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +27,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 	tests := []struct {
 		name    string
 		request request
-		storage *storageMocks.URLStorager
+		storage *repositoryMocks.URLRepository
 		want    want
 	}{
 		{
@@ -36,8 +36,8 @@ func Test_ExpandURLHandler(t *testing.T) {
 				url:    "/shortGoogle",
 				method: http.MethodGet,
 			},
-			storage: func() *storageMocks.URLStorager {
-				urlStorage := new(storageMocks.URLStorager)
+			storage: func() *repositoryMocks.URLRepository {
+				urlStorage := new(repositoryMocks.URLRepository)
 				urlStorage.On("Load", mock.Anything, "shortGoogle").Return(repository.URLEntity{OriginalURL: "http://google.com"}, nil).Once()
 				return urlStorage
 			}(),
@@ -73,8 +73,8 @@ func Test_ExpandURLHandler(t *testing.T) {
 				url:    "/nonexistentId",
 				method: http.MethodGet,
 			},
-			storage: func() *storageMocks.URLStorager {
-				urlStorage := new(storageMocks.URLStorager)
+			storage: func() *repositoryMocks.URLRepository {
+				urlStorage := new(repositoryMocks.URLRepository)
 				urlStorage.On("Load", mock.Anything, "nonexistentId").Return(repository.URLEntity{}, repository.ErrURLNotFound).Once()
 				return urlStorage
 			}(),
@@ -88,8 +88,8 @@ func Test_ExpandURLHandler(t *testing.T) {
 				url:    "/short",
 				method: http.MethodGet,
 			},
-			storage: func() *storageMocks.URLStorager {
-				urlStorage := new(storageMocks.URLStorager)
+			storage: func() *repositoryMocks.URLRepository {
+				urlStorage := new(repositoryMocks.URLRepository)
 				urlStorage.On("Load", mock.Anything, "short").Return("", errors.New("Some error")).Once()
 				return urlStorage
 			}(),
@@ -103,7 +103,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			st := tt.storage
 			if st == nil {
-				st = new(storageMocks.URLStorager)
+				st = new(repositoryMocks.URLRepository)
 			}
 			cfg := config.Config{}
 			idGenerator := new(shortenerMocks.URLIDGenerator)

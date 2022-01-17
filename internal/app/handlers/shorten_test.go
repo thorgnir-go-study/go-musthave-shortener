@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
-	storageMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository/mocks"
+	repositoryMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository/mocks"
 	shortenerMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/shortener/mocks"
 	"io"
 	"net/http"
@@ -30,7 +30,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 		name        string
 		request     request
 		want        want
-		storage     *storageMocks.URLStorager
+		storage     *repositoryMocks.URLRepository
 		idGenerator *shortenerMocks.URLIDGenerator
 	}{
 		{
@@ -45,8 +45,8 @@ func Test_ShortenURLHandler(t *testing.T) {
 				statusCode:  http.StatusCreated,
 				body:        "http://localhost:8080/shortGoogle",
 			},
-			storage: func() *storageMocks.URLStorager {
-				urlStorage := new(storageMocks.URLStorager)
+			storage: func() *repositoryMocks.URLRepository {
+				urlStorage := new(repositoryMocks.URLRepository)
 				urlStorage.On("Store", mock.Anything, mock.Anything).Return(nil).Once()
 				return urlStorage
 			}(),
@@ -99,8 +99,8 @@ func Test_ShortenURLHandler(t *testing.T) {
 			want: want{
 				statusCode: http.StatusInternalServerError,
 			},
-			storage: func() *storageMocks.URLStorager {
-				urlStorage := new(storageMocks.URLStorager)
+			storage: func() *repositoryMocks.URLRepository {
+				urlStorage := new(repositoryMocks.URLRepository)
 				urlStorage.On("Store", mock.Anything, mock.Anything).Return("", errors.New("some error")).Once()
 				return urlStorage
 			}(),
@@ -117,7 +117,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			st := tt.storage
 			if st == nil {
-				st = new(storageMocks.URLStorager)
+				st = new(repositoryMocks.URLRepository)
 			}
 			gen := tt.idGenerator
 			if gen == nil {
