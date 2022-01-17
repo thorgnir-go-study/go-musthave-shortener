@@ -1,4 +1,4 @@
-package request_decompress
+package request
 
 import (
 	"compress/gzip"

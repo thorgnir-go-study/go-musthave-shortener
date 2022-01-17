@@ -101,7 +101,7 @@ func authenticate(ca *CookieAuth) func(http.Handler) http.Handler {
 					next.ServeHTTP(w, r.WithContext(ctx))
 					return
 				}
-				http.Error(w, http.StatusText(401), 401)
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
 			next.ServeHTTP(w, r)

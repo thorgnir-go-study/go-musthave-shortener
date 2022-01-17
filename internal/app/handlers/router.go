@@ -4,7 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares/cookieauth"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares/request-decompress"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares/request"
 	"time"
 )
 
@@ -19,7 +19,7 @@ func NewRouter(service *Service) chi.Router {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(10 * time.Second))
 	r.Use(middleware.Compress(5))
-	r.Use(request_decompress.GzipRequestDecompressor)
+	r.Use(request.GzipRequestDecompressor)
 
 	ca = cookieauth.New([]byte(service.Config.AuthSecretKey))
 	r.Use(cookieauth.Verifier(ca))
