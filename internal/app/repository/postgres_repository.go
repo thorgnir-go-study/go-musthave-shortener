@@ -1,4 +1,4 @@
-package storage
+package repository
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type dbURLStorage struct {
+type postgresURLRepository struct {
 	DB *sqlx.DB
 }
 
@@ -20,7 +20,7 @@ var (
 	selectByUserIDStmt *sqlx.Stmt
 )
 
-func NewDBURLStorage(ctx context.Context, connectionString string) (*dbURLStorage, error) {
+func NewPostgresURLRepository(ctx context.Context, connectionString string) (*postgresURLRepository, error) {
 	db, err := sqlx.Open("pgx", connectionString)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func NewDBURLStorage(ctx context.Context, connectionString string) (*dbURLStorag
 		return nil, err
 	}
 
-	return &dbURLStorage{DB: db}, nil
+	return &postgresURLRepository{DB: db}, nil
 }
 
 //goland:noinspection SqlNoDataSourceInspection,SqlResolve
@@ -68,7 +68,7 @@ WITH new_link AS (
 	return nil
 }
 
-func (s *dbURLStorage) Store(ctx context.Context, urlEntity URLEntity) error {
+func (s *postgresURLRepository) Store(ctx context.Context, urlEntity URLEntity) error {
 	// длительность таймаутов возможно нужно вынести в настройки. или в какие-то константы с понятными названиями и собранные плюс-минус в одном месте.
 	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
@@ -88,7 +88,7 @@ func (s *dbURLStorage) Store(ctx context.Context, urlEntity URLEntity) error {
 	return nil
 }
 
-func (s *dbURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntity) error {
+func (s *postgresURLRepository) StoreBatch(ctx context.Context, entitiesBatch []URLEntity) error {
 	// длительность таймаутов возможно нужно вынести в настройки. или в какие-то константы с понятными названиями и собранные плюс-минус в одном месте.
 	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
@@ -115,7 +115,7 @@ func (s *dbURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntity
 	return nil
 }
 
-//func (s *dbURLStorage) Store(originalURL string, userID string) (string, error) {
+//func (s *postgresURLRepository) Store(originalURL string, userID string) (string, error) {
 //	urlEntity := URLEntity{
 //		OriginalURL: originalURL,
 //		UserID:      userID,
@@ -144,7 +144,7 @@ func (s *dbURLStorage) StoreBatch(ctx context.Context, entitiesBatch []URLEntity
 //	return urlEntity.ID, nil
 //}
 
-func (s *dbURLStorage) Load(ctx context.Context, key string) (URLEntity, error) {
+func (s *postgresURLRepository) Load(ctx context.Context, key string) (URLEntity, error) {
 	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 	var entity URLEntity
@@ -158,7 +158,7 @@ func (s *dbURLStorage) Load(ctx context.Context, key string) (URLEntity, error) 
 	return entity, nil
 }
 
-func (s *dbURLStorage) LoadByUserID(ctx context.Context, userID string) ([]URLEntity, error) {
+func (s *postgresURLRepository) LoadByUserID(ctx context.Context, userID string) ([]URLEntity, error) {
 	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 	var result []URLEntity
@@ -168,7 +168,7 @@ func (s *dbURLStorage) LoadByUserID(ctx context.Context, userID string) ([]URLEn
 	return result, nil
 }
 
-func (s *dbURLStorage) Ping(ctx context.Context) error {
+func (s *postgresURLRepository) Ping(ctx context.Context) error {
 	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 

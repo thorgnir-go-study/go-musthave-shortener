@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
+	storageMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository/mocks"
 	shortenerMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/shortener/mocks"
-	storageMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage/mocks"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -90,7 +90,7 @@ func Test_ShortenURLHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "should respond 500 on url storage error",
+			name: "should respond 500 on url repository error",
 			request: request{
 				url:    "/",
 				method: http.MethodPost,

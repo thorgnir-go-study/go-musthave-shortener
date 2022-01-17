@@ -1,4 +1,4 @@
-package storage
+package repository
 
 type URLEntity struct {
 	ID          string `db:"url_id"`

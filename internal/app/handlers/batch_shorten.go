@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository"
 	"io"
 	"log"
 	"net/http"
@@ -59,13 +59,13 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 
 		ctx, cancel := context.WithTimeout(r.Context(), time.Minute)
 		defer cancel()
-		batch := storage.NewBatchService(100, s.Repository)
+		batch := repository.NewBatchURLEntityStoreService(s.Config.ShortenBatchSize, s.Repository)
 
 		resp := make([]batchShortenResponseEntity, len(req))
 
 		for idx, reqEntity := range req {
 			id := s.IDGenerator.GenerateURLID(reqEntity.OriginalURL)
-			entity := storage.URLEntity{
+			entity := repository.URLEntity{
 				ID:          id,
 				OriginalURL: reqEntity.OriginalURL,
 				UserID:      userID,

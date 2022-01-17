@@ -2,87 +2,40 @@ package main
 
 import (
 	"context"
-	"flag"
-	"github.com/caarlos0/env/v6"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/shortener"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
-	"log"
+	"os"
 )
-
-var (
-	serverAddressFlag *string
-	baseURLFlag       *string
-	storagePathFlag   *string
-	databaseDsnFlag   *string
-)
-
-func init() {
-	serverAddressFlag = flag.String("a", "", "Server address. If not set in CLI or env variable SERVER_ADDRESS defaults to ':8080'")
-	baseURLFlag = flag.String("b", "", "Base URL. If not set in CLI or env variable BASE_URL defaults to http://localhost:8080")
-	storagePathFlag = flag.String("f", "", "File storage path. If not set in CLI or env variable FILE_STORAGE_PATH storage will be non-persistent")
-	databaseDsnFlag = flag.String("d", "", "Database DSN. If not set in CLI or env variable DATABASE_DSN db is not used")
-}
-
-func createRepository(cfg config.Config) (storage.URLStorager, error) {
-	if cfg.DatabaseDSN != "" {
-		return createDBStorage(cfg)
-	}
-	return createInMemoryStorage(cfg)
-}
-
-func createInMemoryStorage(cfg config.Config) (storage.URLStorager, error) {
-	var options []storage.MapURLStorageOption
-	if cfg.StorageFilePath != "" {
-		options = append(options, storage.WithFilePersistance(cfg.StorageFilePath))
-	}
-
-	urlStorage, err := storage.NewMapURLStorage(options...)
-	if err != nil {
-		return nil, err
-	}
-	return urlStorage, nil
-}
-
-func createDBStorage(cfg config.Config) (storage.URLStorager, error) {
-	urlStorage, err := storage.NewDBURLStorage(context.Background(), cfg.DatabaseDSN)
-	if err != nil {
-		return nil, err
-	}
-	return urlStorage, nil
-}
 
 func main() {
-	var cfg config.Config
-	err := env.Parse(&cfg)
+	cfg, err := config.GetConfig()
 	if err != nil {
-		log.Fatalln("Error parsing config")
+		log.Fatal().
+			Err(err).
+			Msg("Failed to get configuration")
 	}
+	configureLogger(*cfg)
 
-	flag.Parse()
-	if *serverAddressFlag != "" {
-		cfg.ServerAddress = *serverAddressFlag
-	}
-
-	if *baseURLFlag != "" {
-		cfg.BaseURL = *baseURLFlag
-	}
-
-	if *storagePathFlag != "" {
-		cfg.StorageFilePath = *storagePathFlag
-	}
-
-	if *databaseDsnFlag != "" {
-		cfg.DatabaseDSN = *databaseDsnFlag
-	}
-
-	urlStorage, err := createRepository(cfg)
+	urlStorage, err := repository.NewRepository(context.Background(), *cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Error().
+			Err(err).
+			Msg("Failed to create repository")
 	}
 
-	idGenerator := shortener.NewRandomStringURLIDGenerator(10)
+	idGenerator := shortener.NewRandomStringURLIDGenerator(cfg.ShortURLIdentifierLength)
 
-	app.StartURLShortenerServer(cfg, urlStorage, idGenerator)
+	app.StartURLShortenerServer(*cfg, urlStorage, idGenerator)
+}
+
+func configureLogger(_ config.Config) {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	// в дальнейшем можно добавить в конфиг требуемый уровень логирования, аутпут (файл или еще чего) и т.д.
+	// пока пишем в консоль красивенько
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 }

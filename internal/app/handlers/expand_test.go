@@ -5,9 +5,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository"
+	storageMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository/mocks"
 	shortenerMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/shortener/mocks"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
-	storageMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage/mocks"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -38,7 +38,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Load", mock.Anything, "shortGoogle").Return(storage.URLEntity{OriginalURL: "http://google.com"}, nil).Once()
+				urlStorage.On("Load", mock.Anything, "shortGoogle").Return(repository.URLEntity{OriginalURL: "http://google.com"}, nil).Once()
 				return urlStorage
 			}(),
 			want: want{
@@ -75,7 +75,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 			},
 			storage: func() *storageMocks.URLStorager {
 				urlStorage := new(storageMocks.URLStorager)
-				urlStorage.On("Load", mock.Anything, "nonexistentId").Return(storage.URLEntity{}, storage.ErrURLNotFound).Once()
+				urlStorage.On("Load", mock.Anything, "nonexistentId").Return(repository.URLEntity{}, repository.ErrURLNotFound).Once()
 				return urlStorage
 			}(),
 			want: want{
@@ -83,7 +83,7 @@ func Test_ExpandURLHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "should respond 500 on storage load error",
+			name: "should respond 500 on repository load error",
 			request: request{
 				url:    "/short",
 				method: http.MethodGet,

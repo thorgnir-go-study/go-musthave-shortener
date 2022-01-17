@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository"
 	"io"
 	"log"
 	"net/http"
@@ -58,7 +58,7 @@ func (s *Service) JSONShortenURLHandler() http.HandlerFunc {
 			}
 		}
 		id := s.IDGenerator.GenerateURLID(u.String())
-		urlEntity := storage.URLEntity{
+		urlEntity := repository.URLEntity{
 			ID:          id,
 			OriginalURL: u.String(),
 			UserID:      userID,
@@ -66,9 +66,9 @@ func (s *Service) JSONShortenURLHandler() http.HandlerFunc {
 		status := http.StatusCreated
 		err = s.Repository.Store(r.Context(), urlEntity)
 		if err != nil {
-			var errExists *storage.ErrURLExists
+			var errExists *repository.ErrURLExists
 			if !errors.As(err, &errExists) {
-				http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
+				http.Error(w, "Could not write url to repository", http.StatusInternalServerError)
 				return
 			}
 			id = errExists.ID

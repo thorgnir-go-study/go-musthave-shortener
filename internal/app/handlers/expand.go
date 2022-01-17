@@ -3,7 +3,7 @@ package handlers
 import (
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository"
 	"net/http"
 )
 
@@ -13,7 +13,7 @@ func (s *Service) ExpandURLHandler() http.HandlerFunc {
 		urlID := chi.URLParam(r, "urlID")
 
 		u, err := s.Repository.Load(r.Context(), urlID)
-		if errors.Is(err, storage.ErrURLNotFound) {
+		if errors.Is(err, repository.ErrURLNotFound) {
 			http.NotFound(w, r)
 			return
 		}
