@@ -155,8 +155,8 @@ func Test_BatchShortenURLHandler(t *testing.T) {
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusCreated {
 				assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
-				defer res.Body.Close()
 				body, err := io.ReadAll(res.Body)
+				defer res.Body.Close()
 				require.NoError(t, err)
 				assert.JSONEq(t, tt.want.body, string(body))
 			}
