@@ -18,6 +18,7 @@ var (
 	batchInsertStmt    *sqlx.NamedStmt
 	getByURLIDStmt     *sqlx.Stmt
 	selectByUserIDStmt *sqlx.Stmt
+	batchDeleteStmt    *sqlx.Stmt
 )
 
 func NewPostgresURLRepository(ctx context.Context, connectionString string) (*postgresURLRepository, error) {
@@ -65,15 +66,15 @@ WITH new_link AS (
 		return err
 	}
 
+	if batchDeleteStmt, err = db.Preparex(`update urls set deleted=true where user_id=$1 and url_id = any($2)`); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (s *postgresURLRepository) Store(ctx context.Context, urlEntity URLEntity) error {
-	// длительность таймаутов возможно нужно вынести в настройки. или в какие-то константы с понятными названиями и собранные плюс-минус в одном месте.
-	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-	defer cancel()
-
-	row := insertStmt.QueryRowContext(innerCtx, &urlEntity)
+	row := insertStmt.QueryRowContext(ctx, &urlEntity)
 	var urlID string
 	err := row.Scan(&urlID)
 	if err != nil {
@@ -89,11 +90,7 @@ func (s *postgresURLRepository) Store(ctx context.Context, urlEntity URLEntity) 
 }
 
 func (s *postgresURLRepository) StoreBatch(ctx context.Context, entitiesBatch []URLEntity) error {
-	// длительность таймаутов возможно нужно вынести в настройки. или в какие-то константы с понятными названиями и собранные плюс-минус в одном месте.
-	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-	defer cancel()
-
-	tx, err := s.DB.BeginTxx(innerCtx, nil)
+	tx, err := s.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -115,40 +112,9 @@ func (s *postgresURLRepository) StoreBatch(ctx context.Context, entitiesBatch []
 	return nil
 }
 
-//func (s *postgresURLRepository) Store(originalURL string, userID string) (string, error) {
-//	urlEntity := URLEntity{
-//		OriginalURL: originalURL,
-//		UserID:      userID,
-//	}
-//	// Тут может быть много разных тактик генерации уникального идентификатора ссылки.
-//	// Можно генерировать извне стораджа, и при нарушении уникальности возвращать из стораджа ошибку, пусть клиент генерирует новый и пытается сохранить еще раз
-//	// Можно перед запросом на инсерт проверять, нет ли такого уже в БД (но тут заморочки с транзакциями и вообще дорого, считаем что ситуация слишком редкая, чтоб такое делать)
-//	// Здесь я пошел по варианту, что айди для ссылки генерируется на стороне стораджа (как и в ин-мемори), и при нарушении констрейнта - генерируем новый айди и пытаемся сохранить снова
-//	for retry := true; retry; {
-//		retry = false
-//		urlEntity.ID = strconv.FormatUint(s.keysRand.Uint64(), 36)
-//		_, err := insertStmt.Exec(&urlEntity)
-//		if err != nil {
-//			fmt.Println(err)
-//			var pgErr *pgconn.PgError
-//			if !errors.As(err, &pgErr) {
-//				return "", err
-//			}
-//			fmt.Println(err)
-//			if pgErr.ConstraintName != "url_id_unique" {
-//				return "", err
-//			}
-//			retry = true
-//		}
-//	}
-//	return urlEntity.ID, nil
-//}
-
 func (s *postgresURLRepository) Load(ctx context.Context, key string) (URLEntity, error) {
-	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-	defer cancel()
 	var entity URLEntity
-	err := getByURLIDStmt.GetContext(innerCtx, &entity, key)
+	err := getByURLIDStmt.GetContext(ctx, &entity, key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return URLEntity{}, ErrURLNotFound
@@ -159,20 +125,23 @@ func (s *postgresURLRepository) Load(ctx context.Context, key string) (URLEntity
 }
 
 func (s *postgresURLRepository) LoadByUserID(ctx context.Context, userID string) ([]URLEntity, error) {
-	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-	defer cancel()
 	var result []URLEntity
-	if err := selectByUserIDStmt.SelectContext(innerCtx, &result, userID); err != nil {
+	if err := selectByUserIDStmt.SelectContext(ctx, &result, userID); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *postgresURLRepository) Ping(ctx context.Context) error {
-	innerCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-	defer cancel()
+// DeleteURLs implements URLRepository.DeleteURLs
+func (s *postgresURLRepository) DeleteURLs(ctx context.Context, userID string, ids []string) error {
+	if _, err := batchDeleteStmt.ExecContext(ctx, userID, ids); err != nil {
+		return err
+	}
+	return nil
+}
 
-	return s.DB.PingContext(innerCtx)
+func (s *postgresURLRepository) Ping(ctx context.Context) error {
+	return s.DB.PingContext(ctx)
 }
 
 func createTables(ctx context.Context, db *sqlx.DB) error {
@@ -184,6 +153,7 @@ func createTables(ctx context.Context, db *sqlx.DB) error {
 		url_id character varying NOT NULL,
 		original_url character varying  NOT NULL,
 		user_id character varying NOT NULL,
+		deleted boolean NOT NULL DEFAULT false,
 		CONSTRAINT urls_pkey PRIMARY KEY (id),
 		CONSTRAINT url_id_unique UNIQUE (url_id),
 		CONSTRAINT original_url_unique UNIQUE (original_url)

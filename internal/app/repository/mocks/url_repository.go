@@ -14,6 +14,20 @@ type URLRepository struct {
 	mock.Mock
 }
 
+// DeleteURLs provides a mock function with given fields: ctx, userID, ids
+func (_m *URLRepository) DeleteURLs(ctx context.Context, userID string, ids []string) error {
+	ret := _m.Called(ctx, userID, ids)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) error); ok {
+		r0 = rf(ctx, userID, ids)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Load provides a mock function with given fields: ctx, key
 func (_m *URLRepository) Load(ctx context.Context, key string) (repository.URLEntity, error) {
 	ret := _m.Called(ctx, key)

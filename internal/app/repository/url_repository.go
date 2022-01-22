@@ -23,6 +23,8 @@ type URLRepository interface {
 	Load(ctx context.Context, key string) (URLEntity, error)
 	// LoadByUserID возвращает все ссылки созданные юзером
 	LoadByUserID(ctx context.Context, userID string) ([]URLEntity, error)
+	// DeleteURLs помечает ссылки удаленными
+	DeleteURLs(ctx context.Context, userID string, ids []string) error
 	// Ping возвращает статус хранилища
 	Ping(ctx context.Context) error
 }

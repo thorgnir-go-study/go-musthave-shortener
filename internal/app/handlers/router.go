@@ -28,6 +28,7 @@ func NewRouter(service *Service) chi.Router {
 	r.Post("/", service.ShortenURLHandler())
 	r.Post("/api/shorten", service.JSONShortenURLHandler())
 	r.Post("/api/shorten/batch", service.BatchShortenURLHandler())
+	r.Delete("/api/user/urls", service.DeleteURLsHandler())
 	r.Get("/{urlID}", service.ExpandURLHandler())
 	r.Get("/user/urls", service.LoadByUserHandler())
 	r.Get("/ping", service.PingHandler())

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"log"
+	"github.com/rs/zerolog/log"
 	"sync"
 )
 
@@ -60,7 +60,7 @@ func (s *inMemoryRepo) Store(_ context.Context, urlEntity URLEntity) error {
 	// В общем, выглядит как очень сомнительная доработка, требующая внушительных усилий и ухудшения интерфейсов (но если я не догадался до какого-то очевидного решения - буду рад услышать)
 	if s.persister != nil {
 		if err := s.persister.Store(urlEntity); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("error while writing to file")
 			return err
 		}
 	}
@@ -86,6 +86,27 @@ func (s *inMemoryRepo) Load(_ context.Context, key string) (urlEntity URLEntity,
 		return URLEntity{}, ErrURLNotFound
 	}
 	return value, nil
+}
+
+// DeleteURLs implements URLRepository.DeleteURLs
+func (s *inMemoryRepo) DeleteURLs(_ context.Context, userID string, ids []string) error {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+
+	for _, id := range ids {
+		if entity, ok := s.m[id]; ok && entity.UserID == userID {
+			entity.Deleted = true
+			s.m[id] = entity
+
+			if s.persister != nil {
+				if err := s.persister.Store(entity); err != nil {
+					log.Error().Err(err).Msg("error while writing to file")
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // LoadByUserID implements URLRepository.LoadByUserID

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -38,7 +39,7 @@ func (p *inMemoryRepoFilePersisterPlain) Store(entity URLEntity) error {
 	defer file.Close()
 
 	w := bufio.NewWriter(file)
-	_, err = fmt.Fprintf(w, "%s\t%s\t%s\n", entity.ID, entity.UserID, entity.OriginalURL)
+	_, err = fmt.Fprintf(w, "%s\t%s\t%s\t%t\n", entity.ID, entity.UserID, entity.OriginalURL, entity.Deleted)
 	if err != nil {
 		return err
 	}
@@ -63,13 +64,19 @@ func (p *inMemoryRepoFilePersisterPlain) Load(dest map[string]URLEntity) error {
 	for s.Scan() {
 		dataStr := s.Text()
 		splittedData := strings.Split(dataStr, "\t")
-		if len(splittedData) != 3 {
+		if len(splittedData) != 4 {
 			return errors.New("invalid string in url repository file")
+		}
+
+		isDeleted, err := strconv.ParseBool(splittedData[3])
+		if err != nil {
+			return fmt.Errorf("error while parsing deleted flag; %w", err)
 		}
 		dest[splittedData[0]] = URLEntity{
 			ID:          splittedData[0],
 			OriginalURL: splittedData[2],
 			UserID:      splittedData[1],
+			Deleted:     isDeleted,
 		}
 	}
 

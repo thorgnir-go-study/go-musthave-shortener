@@ -23,6 +23,12 @@ func (s *Service) ExpandURLHandler() http.HandlerFunc {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
+
+		if u.Deleted {
+			w.WriteHeader(http.StatusGone)
+			return
+		}
+
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Header().Set("Location", u.OriginalURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
