@@ -43,7 +43,7 @@ func prepareStatements(db *sqlx.DB) error {
 	var err error
 	if insertStmt, err = db.PrepareNamed(`
 WITH new_link AS (
-    INSERT INTO urls(url_id, original_url, user_id) VALUES (:url_id, :original_url, :user_id)
+    INSERT INTO urls(url_id, original_url, user_id, deleted) VALUES (:url_id, :original_url, :user_id, :deleted)
     ON CONFLICT(original_url) DO NOTHING
     RETURNING url_id
 ) SELECT COALESCE(
@@ -54,15 +54,15 @@ WITH new_link AS (
 		return err
 	}
 
-	if getByURLIDStmt, err = db.Preparex(`select url_id, original_url, user_id  from urls where url_id = $1`); err != nil {
+	if getByURLIDStmt, err = db.Preparex(`select url_id, original_url, user_id, deleted  from urls where url_id = $1`); err != nil {
 		return err
 	}
 
-	if selectByUserIDStmt, err = db.Preparex(`select url_id, original_url, user_id  from urls where user_id=$1`); err != nil {
+	if selectByUserIDStmt, err = db.Preparex(`select url_id, original_url, user_id, deleted  from urls where user_id=$1`); err != nil {
 		return err
 	}
 
-	if batchInsertStmt, err = db.PrepareNamed(`INSERT INTO urls(url_id, original_url, user_id) VALUES (:url_id, :original_url, :user_id)`); err != nil {
+	if batchInsertStmt, err = db.PrepareNamed(`INSERT INTO urls(url_id, original_url, user_id, deleted) VALUES (:url_id, :original_url, :user_id, :deleted)`); err != nil {
 		return err
 	}
 
