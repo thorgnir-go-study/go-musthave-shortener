@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"github.com/go-chi/chi/v5"
+	"github.com/rs/zerolog/log"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository"
 	"net/http"
 )
@@ -18,6 +19,7 @@ func (s *Service) ExpandURLHandler() http.HandlerFunc {
 			return
 		}
 		if err != nil {
+			log.Error().Err(err).Msg("error while loading shortened link")
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
