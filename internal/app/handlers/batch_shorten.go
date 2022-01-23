@@ -29,13 +29,13 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 		bodyContent, err := io.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
-			log.Error().Err(err).Msg("BatchShortenURLHandler: could not read request body")
+			log.Error().Err(err).Msg("could not read request body")
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)
 			return
 		}
 		userID, err := cookieauth.FromContext(r.Context())
 		if err != nil {
-			log.Info().Err(err).Msg("BatchShortenURLHandler: could not read request body")
+			log.Info().Err(err).Msg("could not read request body")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -43,12 +43,12 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 		var req batchShortenRequest
 
 		if err = json.Unmarshal(bodyContent, &req); err != nil {
-			log.Info().Err(err).Msg("BatchShortenURLHandler: invalid json")
+			log.Info().Err(err).Msg("invalid json")
 			http.Error(w, "Invalid json", http.StatusBadRequest)
 		}
 
 		if isValid, invalidURL := isValidRequest(req); !isValid {
-			log.Info().Err(err).Msg("BatchShortenURLHandler: invalid url" + invalidURL)
+			log.Info().Err(err).Msg("invalid url" + invalidURL)
 			http.Error(w, "invalid url"+invalidURL, http.StatusBadRequest)
 			return
 		}
@@ -68,7 +68,7 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 			}
 			err = batch.Add(ctx, entity)
 			if err != nil {
-				log.Error().Err(err).Msg("BatchShortenURLHandler: error in batch.add")
+				log.Error().Err(err).Msg("error in batch.add")
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 				return
 			}
@@ -82,14 +82,14 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 		// так что оставляю так
 		err = batch.Flush(ctx)
 		if err != nil {
-			log.Error().Err(err).Msg("BatchShortenURLHandler: error while batch.flush")
+			log.Error().Err(err).Msg("error while batch.flush")
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
 		serializedResp, err := json.Marshal(resp)
 		if err != nil {
-			log.Error().Err(err).Msg("BatchShortenURLHandler: can't serialize response")
+			log.Error().Err(err).Msg("can't serialize response")
 			http.Error(w, "Can't serialize response", http.StatusInternalServerError)
 		}
 
@@ -98,7 +98,7 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 
 		_, err = w.Write(serializedResp)
 		if err != nil {
-			log.Error().Err(err).Msg("BatchShortenURLHandler: write response failed")
+			log.Error().Err(err).Msg("write response failed")
 			log.Printf("Write failed: %v", err)
 		}
 	}

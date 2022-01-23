@@ -18,26 +18,26 @@ func (s *Service) ShortenURLHandler() http.HandlerFunc {
 		defer r.Body.Close()
 
 		if err != nil {
-			log.Info().Err(err).Msg("ShortenURLHandler: could not read request body")
+			log.Info().Err(err).Msg("could not read request body")
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)
 			return
 		}
 		u, err := url.ParseRequestURI(string(bodyContent))
 		if err != nil {
-			log.Info().Err(err).Msg("ShortenURLHandler: not a valid url")
+			log.Info().Err(err).Msg("not a valid url")
 			http.Error(w, "Not a valid url", http.StatusBadRequest)
 			return
 		}
 
 		if !u.IsAbs() {
-			log.Info().Err(err).Msg("ShortenURLHandler: not an absolute url")
+			log.Info().Err(err).Msg("not an absolute url")
 			http.Error(w, "Only absolute urls allowed", http.StatusBadRequest)
 			return
 		}
 
 		userID, err := cookieauth.FromContext(r.Context())
 		if err != nil {
-			log.Info().Err(err).Msg("ShortenURLHandler: unauthorized")
+			log.Info().Err(err).Msg("unauthorized")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -53,7 +53,7 @@ func (s *Service) ShortenURLHandler() http.HandlerFunc {
 		if err != nil {
 			var errExists *repository.ErrURLExists
 			if !errors.As(err, &errExists) {
-				log.Error().Err(err).Msg("ShortenURLHandler: could not write url to repository")
+				log.Error().Err(err).Msg("could not write url to repository")
 				http.Error(w, "Could not write url to repository", http.StatusInternalServerError)
 				return
 			}
@@ -65,7 +65,7 @@ func (s *Service) ShortenURLHandler() http.HandlerFunc {
 		w.WriteHeader(status)
 		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", s.Config.BaseURL, id)))
 		if err != nil {
-			log.Error().Err(err).Msg("ShortenURLHandler: could write response")
+			log.Error().Err(err).Msg("could write response")
 		}
 	}
 }

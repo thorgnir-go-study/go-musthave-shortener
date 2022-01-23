@@ -10,7 +10,7 @@ func (s *Service) PingHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := s.Repository.Ping(r.Context())
 		if err != nil {
-			log.Error().Err(err).Msg("PingHandler: url repository is not accessible")
+			log.Error().Err(err).Msg("url repository is not accessible")
 			http.Error(w, "url repository is not accessible", http.StatusInternalServerError)
 			return
 		}

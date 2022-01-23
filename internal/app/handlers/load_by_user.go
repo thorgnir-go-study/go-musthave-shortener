@@ -17,14 +17,14 @@ func (s *Service) LoadByUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := cookieauth.FromContext(r.Context())
 		if err != nil {
-			log.Info().Err(err).Msg("LoadByUserHandler: unauthorized")
+			log.Info().Err(err).Msg("unauthorized")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
 		urlEntities, err := s.Repository.LoadByUserID(r.Context(), userID)
 		if err != nil {
-			log.Error().Err(err).Msg("LoadByUserHandler: error while getting links from repository")
+			log.Error().Err(err).Msg("error while getting links from repository")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -43,14 +43,14 @@ func (s *Service) LoadByUserHandler() http.HandlerFunc {
 
 		serializedResp, err := json.Marshal(respEntities)
 		if err != nil {
-			log.Error().Err(err).Msg("LoadByUserHandler: error while serializing response")
+			log.Error().Err(err).Msg("error while serializing response")
 			http.Error(w, "Can't serialize response", http.StatusInternalServerError)
 		}
 
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		_, err = w.Write(serializedResp)
 		if err != nil {
-			log.Error().Err(err).Msg("LoadByUserHandler: write response failed")
+			log.Error().Err(err).Msg("write response failed")
 		}
 
 	}
