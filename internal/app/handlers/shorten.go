@@ -3,11 +3,10 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
+	"github.com/rs/zerolog/log"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares/cookieauth"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -16,42 +15,35 @@ import (
 func (s *Service) ShortenURLHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bodyContent, err := io.ReadAll(r.Body)
-
-		defer func() {
-			err := r.Body.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		}()
+		defer r.Body.Close()
 
 		if err != nil {
+			log.Info().Err(err).Msg("could not read request body")
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)
 			return
 		}
 		u, err := url.ParseRequestURI(string(bodyContent))
 		if err != nil {
+			log.Info().Err(err).Msg("not a valid url")
 			http.Error(w, "Not a valid url", http.StatusBadRequest)
 			return
 		}
 
 		if !u.IsAbs() {
+			log.Info().Err(err).Msg("not an absolute url")
 			http.Error(w, "Only absolute urls allowed", http.StatusBadRequest)
 			return
 		}
 
-		userID, err := ca.GetUserID(r)
+		userID, err := cookieauth.FromContext(r.Context())
 		if err != nil {
-			if errors.Is(err, cookieauth.ErrNoTokenFound) || errors.Is(err, cookieauth.ErrInvalidToken) {
-				userID = uuid.NewString()
-				ca.SetUserIDCookie(w, userID)
-			} else {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
+			log.Info().Err(err).Msg("unauthorized")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
 		}
 
 		id := s.IDGenerator.GenerateURLID(u.String())
-		urlEntity := storage.URLEntity{
+		urlEntity := repository.URLEntity{
 			ID:          id,
 			OriginalURL: u.String(),
 			UserID:      userID,
@@ -59,9 +51,10 @@ func (s *Service) ShortenURLHandler() http.HandlerFunc {
 		status := http.StatusCreated
 		err = s.Repository.Store(r.Context(), urlEntity)
 		if err != nil {
-			var errExists *storage.ErrURLExists
+			var errExists *repository.ErrURLExists
 			if !errors.As(err, &errExists) {
-				http.Error(w, "Could not write url to storage", http.StatusInternalServerError)
+				log.Error().Err(err).Msg("could not write url to repository")
+				http.Error(w, "Could not write url to repository", http.StatusInternalServerError)
 				return
 			}
 			id = errExists.ID
@@ -72,7 +65,7 @@ func (s *Service) ShortenURLHandler() http.HandlerFunc {
 		w.WriteHeader(status)
 		_, err = w.Write([]byte(fmt.Sprintf("%s/%s", s.Config.BaseURL, id)))
 		if err != nil {
-			log.Printf("Write failed: %v", err)
+			log.Error().Err(err).Msg("could write response")
 		}
 	}
 }

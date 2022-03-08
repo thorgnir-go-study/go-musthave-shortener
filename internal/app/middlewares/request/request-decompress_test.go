@@ -1,4 +1,4 @@
-package middlewares
+package request
 
 import (
 	"bytes"

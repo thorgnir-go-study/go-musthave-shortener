@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/config"
+	repositoryMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository/mocks"
 	shortenerMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/shortener/mocks"
-	storageMocks "github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage/mocks"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -31,7 +31,7 @@ func Test_BatchShortenURLHandler(t *testing.T) {
 		name        string
 		request     request
 		want        want
-		storage     *storageMocks.URLStorager
+		storage     *repositoryMocks.URLRepository
 		idGenerator *shortenerMocks.URLIDGenerator
 	}{
 		{
@@ -52,8 +52,8 @@ func Test_BatchShortenURLHandler(t *testing.T) {
 {"short_url":"http://localhost:8080/shortYandex", "correlation_id": "2"}
 ]`,
 			},
-			storage: func() *storageMocks.URLStorager {
-				urlStorage := new(storageMocks.URLStorager)
+			storage: func() *repositoryMocks.URLRepository {
+				urlStorage := new(repositoryMocks.URLRepository)
 				urlStorage.On("StoreBatch", mock.Anything, mock.Anything).Return(nil).Once()
 				return urlStorage
 			}(),
@@ -104,7 +104,7 @@ func Test_BatchShortenURLHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "should respond 500 on url storage error",
+			name: "should respond 500 on url repository error",
 			request: request{
 				url:    "/api/shorten/batch",
 				method: http.MethodPost,
@@ -116,8 +116,8 @@ func Test_BatchShortenURLHandler(t *testing.T) {
 			want: want{
 				statusCode: http.StatusInternalServerError,
 			},
-			storage: func() *storageMocks.URLStorager {
-				urlStorage := new(storageMocks.URLStorager)
+			storage: func() *repositoryMocks.URLRepository {
+				urlStorage := new(repositoryMocks.URLRepository)
 				urlStorage.On("StoreBatch", mock.Anything, mock.Anything).Return(errors.New("some error")).Once()
 				return urlStorage
 			}(),
@@ -135,14 +135,15 @@ func Test_BatchShortenURLHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			st := tt.storage
 			if st == nil {
-				st = new(storageMocks.URLStorager)
+				st = new(repositoryMocks.URLRepository)
 			}
 			gen := tt.idGenerator
 			if gen == nil {
 				gen = new(shortenerMocks.URLIDGenerator)
 			}
 			cfg := config.Config{
-				BaseURL: baseURL,
+				BaseURL:          baseURL,
+				ShortenBatchSize: 100,
 			}
 
 			service := NewService(st, gen, cfg)
@@ -154,8 +155,8 @@ func Test_BatchShortenURLHandler(t *testing.T) {
 			assert.Equal(t, tt.want.statusCode, res.StatusCode)
 			if res.StatusCode == http.StatusCreated {
 				assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
-				defer res.Body.Close()
 				body, err := io.ReadAll(res.Body)
+				defer res.Body.Close()
 				require.NoError(t, err)
 				assert.JSONEq(t, tt.want.body, string(body))
 			}

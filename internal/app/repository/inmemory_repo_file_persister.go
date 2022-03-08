@@ -1,31 +1,32 @@
-package storage
+package repository
 
 import (
 	"bufio"
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 )
 
-type URLStoragePersister interface {
+type inMemoryRepoFilePersister interface {
 	Store(entity URLEntity) error
 	Load(dest map[string]URLEntity) error
 }
 
-type plainTextFileURLStoragePersister struct {
+type inMemoryRepoFilePersisterPlain struct {
 	mx       sync.Mutex
 	filename string
 }
 
-func createNewPlainTextFileURLStoragePersister(filename string) *plainTextFileURLStoragePersister {
-	return &plainTextFileURLStoragePersister{
+func createNewInMemoryRepoFilePersisterPlain(filename string) *inMemoryRepoFilePersisterPlain {
+	return &inMemoryRepoFilePersisterPlain{
 		filename: filename,
 	}
 }
 
-func (p *plainTextFileURLStoragePersister) Store(entity URLEntity) error {
+func (p *inMemoryRepoFilePersisterPlain) Store(entity URLEntity) error {
 	// тут возможны разные подходы, в зависимости от предполагаемой нагрузки
 	// если предположить, что запись будет частой, то имеет смысл держать файл открытым и в структуру добавить writer
 	// текущая реализация для варианта "пишем редко"
@@ -38,7 +39,7 @@ func (p *plainTextFileURLStoragePersister) Store(entity URLEntity) error {
 	defer file.Close()
 
 	w := bufio.NewWriter(file)
-	_, err = fmt.Fprintf(w, "%s\t%s\t%s\n", entity.ID, entity.UserID, entity.OriginalURL)
+	_, err = fmt.Fprintf(w, "%s\t%s\t%s\t%t\n", entity.ID, entity.UserID, entity.OriginalURL, entity.Deleted)
 	if err != nil {
 		return err
 	}
@@ -49,7 +50,7 @@ func (p *plainTextFileURLStoragePersister) Store(entity URLEntity) error {
 	return nil
 }
 
-func (p *plainTextFileURLStoragePersister) Load(dest map[string]URLEntity) error {
+func (p *inMemoryRepoFilePersisterPlain) Load(dest map[string]URLEntity) error {
 	p.mx.Lock()
 	defer p.mx.Unlock()
 	file, err := os.Open(p.filename)
@@ -63,17 +64,23 @@ func (p *plainTextFileURLStoragePersister) Load(dest map[string]URLEntity) error
 	for s.Scan() {
 		dataStr := s.Text()
 		splittedData := strings.Split(dataStr, "\t")
-		if len(splittedData) != 3 {
-			return errors.New("invalid string in url storage file")
+		if len(splittedData) != 4 {
+			return errors.New("invalid string in url repository file")
+		}
+
+		isDeleted, err := strconv.ParseBool(splittedData[3])
+		if err != nil {
+			return fmt.Errorf("error while parsing deleted flag; %w", err)
 		}
 		dest[splittedData[0]] = URLEntity{
 			ID:          splittedData[0],
 			OriginalURL: splittedData[2],
 			UserID:      splittedData[1],
+			Deleted:     isDeleted,
 		}
 	}
 
-	if err := s.Err(); err != nil {
+	if err = s.Err(); err != nil {
 		return err
 	}
 

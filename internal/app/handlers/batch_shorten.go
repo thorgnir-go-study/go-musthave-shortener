@@ -3,13 +3,11 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/storage"
+	"github.com/rs/zerolog/log"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares/cookieauth"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/repository"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -31,47 +29,46 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 		bodyContent, err := io.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
+			log.Error().Err(err).Msg("could not read request body")
 			http.Error(w, "Could not read request body", http.StatusInternalServerError)
 			return
 		}
-
-		userID, err := ca.GetUserID(r)
+		userID, err := cookieauth.FromContext(r.Context())
 		if err != nil {
-			if errors.Is(err, cookieauth.ErrNoTokenFound) || errors.Is(err, cookieauth.ErrInvalidToken) {
-				userID = uuid.NewString()
-				ca.SetUserIDCookie(w, userID)
-			} else {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
+			log.Info().Err(err).Msg("could not read request body")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
 		}
 
 		var req batchShortenRequest
 
-		if err := json.Unmarshal(bodyContent, &req); err != nil {
+		if err = json.Unmarshal(bodyContent, &req); err != nil {
+			log.Info().Err(err).Msg("invalid json")
 			http.Error(w, "Invalid json", http.StatusBadRequest)
 		}
 
 		if isValid, invalidURL := isValidRequest(req); !isValid {
+			log.Info().Err(err).Msg("invalid url" + invalidURL)
 			http.Error(w, "invalid url"+invalidURL, http.StatusBadRequest)
 			return
 		}
 
 		ctx, cancel := context.WithTimeout(r.Context(), time.Minute)
 		defer cancel()
-		batch := storage.NewBatchService(100, s.Repository)
+		batch := repository.NewBatchURLEntityStoreService(s.Config.ShortenBatchSize, s.Repository)
 
 		resp := make([]batchShortenResponseEntity, len(req))
 
 		for idx, reqEntity := range req {
 			id := s.IDGenerator.GenerateURLID(reqEntity.OriginalURL)
-			entity := storage.URLEntity{
+			entity := repository.URLEntity{
 				ID:          id,
 				OriginalURL: reqEntity.OriginalURL,
 				UserID:      userID,
 			}
-			err = batch.Add(r.Context(), entity)
+			err = batch.Add(ctx, entity)
 			if err != nil {
+				log.Error().Err(err).Msg("error in batch.add")
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 				return
 			}
@@ -80,15 +77,19 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 				ShortURL:      fmt.Sprintf("%s/%s", s.Config.BaseURL, id),
 			}
 		}
-
+		// по комменту из ревью (сделай через defer func() { err := batch.Flush(ctx)}, так у тебя добавиться больше опций и если где-то ты добавишь return, то у тебя Flush все равно сработает)
+		// flush-то сработает, но ошибку мы уже не поймаем, и на клиент не отдадим 500 (попробовал, тестом поймал что в таком случае при отказе репозитория - клиенту отдается 201 типа все в порядке)
+		// так что оставляю так
 		err = batch.Flush(ctx)
 		if err != nil {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+			log.Error().Err(err).Msg("error while batch.flush")
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
 		serializedResp, err := json.Marshal(resp)
 		if err != nil {
+			log.Error().Err(err).Msg("can't serialize response")
 			http.Error(w, "Can't serialize response", http.StatusInternalServerError)
 		}
 
@@ -97,6 +98,7 @@ func (s *Service) BatchShortenURLHandler() http.HandlerFunc {
 
 		_, err = w.Write(serializedResp)
 		if err != nil {
+			log.Error().Err(err).Msg("write response failed")
 			log.Printf("Write failed: %v", err)
 		}
 	}

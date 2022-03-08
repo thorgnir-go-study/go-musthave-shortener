@@ -1,22 +1,22 @@
-package storage
+package repository
 
 import (
 	"context"
-	"log"
+	"github.com/rs/zerolog/log"
 	"sync"
 )
 
-type mapURLStorage struct {
+type inMemoryRepo struct {
 	mx        sync.RWMutex
 	m         map[string]URLEntity
-	persister URLStoragePersister
+	persister inMemoryRepoFilePersister
 }
 
-type MapURLStorageOption func(*mapURLStorage) error
+type InMemoryRepositoryOption func(*inMemoryRepo) error
 
-// NewMapURLStorage создает реализацию хранилища ссылок в памяти, на основе map
-func NewMapURLStorage(opts ...MapURLStorageOption) (*mapURLStorage, error) {
-	storage := &mapURLStorage{
+// NewInMemoryRepository создает реализацию хранилища ссылок в памяти, на основе map
+func NewInMemoryRepository(opts ...InMemoryRepositoryOption) (*inMemoryRepo, error) {
+	storage := &inMemoryRepo{
 		m: make(map[string]URLEntity),
 	}
 
@@ -31,9 +31,9 @@ func NewMapURLStorage(opts ...MapURLStorageOption) (*mapURLStorage, error) {
 }
 
 // WithFilePersistance позволяет сохранять в файле состояние хранилища, и при создании хранилища восстанавливать состояние из файла.
-func WithFilePersistance(filename string) MapURLStorageOption {
-	return func(storage *mapURLStorage) error {
-		persister := createNewPlainTextFileURLStoragePersister(filename)
+func WithFilePersistance(filename string) InMemoryRepositoryOption {
+	return func(storage *inMemoryRepo) error {
+		persister := createNewInMemoryRepoFilePersisterPlain(filename)
 		storage.persister = persister
 		err := storage.persister.Load(storage.m)
 		if err != nil {
@@ -43,8 +43,8 @@ func WithFilePersistance(filename string) MapURLStorageOption {
 	}
 }
 
-// Store implements URLStorager.Store
-func (s *mapURLStorage) Store(_ context.Context, urlEntity URLEntity) error {
+// Store implements URLRepository.Store
+func (s *inMemoryRepo) Store(_ context.Context, urlEntity URLEntity) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 	// По заданию было добавить уникальный индекс по оригинальной ссылке только в хранилище БД
@@ -60,7 +60,7 @@ func (s *mapURLStorage) Store(_ context.Context, urlEntity URLEntity) error {
 	// В общем, выглядит как очень сомнительная доработка, требующая внушительных усилий и ухудшения интерфейсов (но если я не догадался до какого-то очевидного решения - буду рад услышать)
 	if s.persister != nil {
 		if err := s.persister.Store(urlEntity); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("error while writing to file")
 			return err
 		}
 	}
@@ -68,7 +68,7 @@ func (s *mapURLStorage) Store(_ context.Context, urlEntity URLEntity) error {
 	return nil
 }
 
-func (s *mapURLStorage) StoreBatch(_ context.Context, entitiesBatch []URLEntity) error {
+func (s *inMemoryRepo) StoreBatch(_ context.Context, entitiesBatch []URLEntity) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 	for _, urlEntity := range entitiesBatch {
@@ -77,8 +77,8 @@ func (s *mapURLStorage) StoreBatch(_ context.Context, entitiesBatch []URLEntity)
 	return nil
 }
 
-// Load implements URLStorager.Load
-func (s *mapURLStorage) Load(_ context.Context, key string) (urlEntity URLEntity, err error) {
+// Load implements URLRepository.Load
+func (s *inMemoryRepo) Load(_ context.Context, key string) (urlEntity URLEntity, err error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 	value, ok := s.m[key]
@@ -88,8 +88,29 @@ func (s *mapURLStorage) Load(_ context.Context, key string) (urlEntity URLEntity
 	return value, nil
 }
 
-// LoadByUserID implements URLStorager.LoadByUserID
-func (s *mapURLStorage) LoadByUserID(_ context.Context, userID string) ([]URLEntity, error) {
+// DeleteURLs implements URLRepository.DeleteURLs
+func (s *inMemoryRepo) DeleteURLs(_ context.Context, userID string, ids []string) error {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+
+	for _, id := range ids {
+		if entity, ok := s.m[id]; ok && entity.UserID == userID {
+			entity.Deleted = true
+			s.m[id] = entity
+
+			if s.persister != nil {
+				if err := s.persister.Store(entity); err != nil {
+					log.Error().Err(err).Msg("error while writing to file")
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// LoadByUserID implements URLRepository.LoadByUserID
+func (s *inMemoryRepo) LoadByUserID(_ context.Context, userID string) ([]URLEntity, error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
 	entities := make([]URLEntity, 0)
@@ -101,7 +122,7 @@ func (s *mapURLStorage) LoadByUserID(_ context.Context, userID string) ([]URLEnt
 	return entities, nil
 }
 
-// Ping implements URLStorager.Ping
-func (s *mapURLStorage) Ping(_ context.Context) error {
+// Ping implements URLRepository.Ping
+func (s *inMemoryRepo) Ping(_ context.Context) error {
 	return nil
 }

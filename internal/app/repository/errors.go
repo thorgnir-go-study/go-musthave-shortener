@@ -1,4 +1,4 @@
-package storage
+package repository
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 )
 
 // ErrURLNotFound ошибка "ссылка не найдена в хранилище"
-var ErrURLNotFound = errors.New("url not found in storage")
+var ErrURLNotFound = errors.New("url not found in repository")
 
 // ErrURLExists ошибка "оригинальная ссылка уже существует в хранилище"
 type ErrURLExists struct {
@@ -19,7 +19,7 @@ func NewErrURLExists(id string) *ErrURLExists {
 }
 
 func (e *ErrURLExists) Error() string {
-	return fmt.Sprintf("url already exists in storage. short url id: %s", e.ID)
+	return fmt.Sprintf("url already exists in repository. short url id: %s", e.ID)
 }
 
 func (e *ErrURLExists) Unwrap() error {

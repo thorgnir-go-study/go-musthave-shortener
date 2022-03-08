@@ -2,11 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/cookieauth"
-	"log"
+	"github.com/rs/zerolog/log"
+	"github.com/thorgnir-go-study/go-musthave-shortener/internal/app/middlewares/cookieauth"
 	"net/http"
 )
 
@@ -17,19 +15,16 @@ type responseEntity struct {
 
 func (s *Service) LoadByUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := ca.GetUserID(r)
+		userID, err := cookieauth.FromContext(r.Context())
 		if err != nil {
-			if errors.Is(err, cookieauth.ErrNoTokenFound) || errors.Is(err, cookieauth.ErrInvalidToken) {
-				userID = uuid.NewString()
-				ca.SetUserIDCookie(w, userID)
-			} else {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
+			log.Info().Err(err).Msg("unauthorized")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
 		}
 
 		urlEntities, err := s.Repository.LoadByUserID(r.Context(), userID)
 		if err != nil {
+			log.Error().Err(err).Msg("error while getting links from repository")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -48,13 +43,14 @@ func (s *Service) LoadByUserHandler() http.HandlerFunc {
 
 		serializedResp, err := json.Marshal(respEntities)
 		if err != nil {
+			log.Error().Err(err).Msg("error while serializing response")
 			http.Error(w, "Can't serialize response", http.StatusInternalServerError)
 		}
 
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		_, err = w.Write(serializedResp)
 		if err != nil {
-			log.Printf("Write failed: %v", err)
+			log.Error().Err(err).Msg("write response failed")
 		}
 
 	}
