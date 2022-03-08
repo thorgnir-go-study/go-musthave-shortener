@@ -116,7 +116,7 @@ var _ = Describe("LoadByUser", func() {
 })
 
 func testGetList(ts *httptest.Server, cookies []*http.Cookie) *http.Response {
-	return testRequest(ts, "GET", "/user/urls", cookies, nil)
+	return testRequest(ts, "GET", "/api/user/urls", cookies, nil)
 }
 
 func testRequest(ts *httptest.Server, method, path string, cookies []*http.Cookie, body io.Reader) *http.Response {
